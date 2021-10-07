@@ -21,3 +21,5 @@ Makefile
 Makefile.in
 *.dirstamp
 sst-unit-test/*.out
+.ccls-cache/
+*.swp
