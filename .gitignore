@@ -23,3 +23,7 @@ Makefile.in
 sst-unit-test/*.out
 .ccls-cache/
 *.swp
+tags
+.gdb_history
+bin/params.out
+*.out

@@ -47,7 +47,7 @@ DLL_ROOTS :=
 #TOOL_CXXFLAGS += -I/usr/include
 #TOOL_LPATHS += -L/usr/lib/x86_64-linux-gnu
 #TOOL_LIBS += -lz
-TOOL_LIBS += $(PIN_HOME)/extras/xed-intel64/lib/libzlib.a
+TOOL_LIBS += $(PIN_ROOT)/extras/xed-intel64/lib/libzlib.a
 
 ###### Define the sanity subset ######
 
