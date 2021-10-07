@@ -113,6 +113,15 @@ dram_num_channel 8
 dram_rowbuffer_size 2048
 dram_scheduling_policy FRFCFS
 
+# Network
+noc_topology mesh
+noc_dimension 2
+
+# CXL
+cme_enable 0
+cme_addr_min 139637976727552
+cme_latency 300
+
 
 # ETC
 bug_detector_enable 1
