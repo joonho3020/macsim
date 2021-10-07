@@ -95,6 +95,8 @@ typedef enum Mem_Req_State_enum {
   MEM_NOC_START,
   MEM_NOC_DONE,
   MEM_STATE_MAX,
+  CME_NOC_START,
+  CME_NOC_DONE
 } Mem_Req_State;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

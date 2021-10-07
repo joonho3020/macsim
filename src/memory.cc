@@ -608,6 +608,7 @@ int dcu_c::access(uop_c* uop) {
       done_func = dcache_fill_line_wrapper;
     }
 
+    // new_mem_req : add to MSHR entry or push request to L2 cache
     int result;
     result = m_simBase->m_memory->new_mem_req(
       req_type, req_addr, req_size, cache_hit,

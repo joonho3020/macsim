@@ -34,9 +34,12 @@ POSSIBILITY OF SUCH DAMAGE.
  * Description  : Dram Controller
  *********************************************************************************************/
 
+#include <iostream>
+
 #include "assert_macros.h"
 #include "debug_macros.h"
 #include "dram_ctrl.h"
+#include "macsim.h"
 #include "memory.h"
 #include "memreq_info.h"
 #include "utils.h"
@@ -149,6 +152,24 @@ void drb_entry_s::set(mem_req_s* mem_req, uint64_t bid, uint64_t rid,
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
+cme_entry_s::cme_entry_s(macsim_c *simBase) {
+  reset();
+  m_simBase = simBase;
+}
+
+void cme_entry_s::set(mem_req_s* req, Counter cur_tick) {
+  m_req = req;
+  m_start_req = cur_tick;
+  m_cycles = 0;
+}
+
+void cme_entry_s::reset() {
+  m_req = NULL;
+  m_cycles = -1;
+  m_start_req = -1;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
 // dram controller
 
 // dram controller constructor
@@ -237,10 +258,25 @@ dram_ctrl_c::dram_ctrl_c(macsim_c* simBase) : dram_c(simBase) {
   } else {
     m_tmp_output_buffer = NULL;
   }
+  
+  // FIXME
+  // CME buffers
+  m_cmein_buffer = new list<cme_entry_s*>;
+  m_cmeout_buffer = new list<mem_req_s*>;
+  m_cme_free_list = new list<cme_entry_s*>;
+  for (int ii = 0; ii < 30; ii++) {
+    cme_entry_s* new_entry = new cme_entry_s(m_simBase);
+    m_cme_free_list->push_back(new_entry);
+  }
 }
 
 // dram controller destructor
 dram_ctrl_c::~dram_ctrl_c() {
+  std::cerr << "min access addr: " << 
+    hex << *m_accessed_addr.begin() << std::endl;
+  std::cerr << "max access addr:" << 
+    hex << *m_accessed_addr.rbegin() << std::endl;
+
   delete[] m_buffer;
   delete[] m_buffer_free_list;
   delete[] m_current_list;
@@ -251,6 +287,10 @@ dram_ctrl_c::~dram_ctrl_c() {
   delete[] m_bank_timestamp;
   delete m_output_buffer;
   delete m_tmp_output_buffer;
+
+  delete m_cmein_buffer;
+  delete m_cmeout_buffer;
+  delete m_cme_free_list;
 }
 
 // initialize dram controller
@@ -267,54 +307,76 @@ bool dram_ctrl_c::insert_new_req(mem_req_s* mem_req) {
   Addr bid;
   Addr rid;
 
-  int num_mc = *m_simBase->m_knobs->KNOB_DRAM_NUM_MC;
-  if ((num_mc & (num_mc - 1)) == 0) {  // if num_mc is a power of 2
-    bid_xor = (addr >> m_bid_xor_shift) & m_bid_mask;
-    cid = addr & m_cid_mask;
-    addr = addr >> m_bid_shift;
-    bid = addr & m_bid_mask;
-    addr = addr >> m_rid_shift;
-    rid = addr;
-  } else {
-    bid_xor = (addr >> m_bid_xor_shift) & m_bid_mask;
-    cid = addr & m_cid_mask;
-    addr = (addr >> m_bid_shift) / num_mc;
-
-    bid = addr & m_bid_mask;
-    addr = addr >> m_rid_shift;
-    rid = addr;
-  }
-
-  ASSERTM(rid >= 0, "addr:0x%llx cid:%llu bid:%llu rid:%llu type:%s\n", addr,
-          cid, bid, rid, mem_req_c::mem_req_type_name[mem_req->m_type]);
-
-  // Permutation-based Interleaving
-  if (*KNOB(KNOB_DRAM_BANK_XOR_INDEX)) {
-    bid = bid ^ bid_xor;
-  }
-
-  // check buffer full
-  if (m_buffer_free_list[bid].empty()) {
-    flush_prefetch(bid);
-
-    if (m_buffer_free_list[bid].empty()) {
+  // address is in the CME range
+  if (addr >= *KNOB(KNOB_CME_RANGE) && *KNOB(KNOB_CME_ENABLE)) {
+    if (m_cme_free_list->empty()) {
       return false;
+    } else {
+      cme_entry_s* new_entry = m_cme_free_list->front();
+      m_cme_free_list->pop_front();
+
+      new_entry->set(mem_req, m_simBase->m_core_cycle[0]);
+      m_cmein_buffer->push_back(new_entry);
+
+      STAT_EVENT(TOTAL_DRAM);
+
+      ++m_total_req;
+      mem_req->m_state = CME_NOC_START;
+
+      return true;
     }
   }
+  // if the address in the DIMM range
+  else {
+    int num_mc = *m_simBase->m_knobs->KNOB_DRAM_NUM_MC;
+    if ((num_mc & (num_mc - 1)) == 0) {  // if num_mc is a power of 2
+      bid_xor = (addr >> m_bid_xor_shift) & m_bid_mask;
+      cid = addr & m_cid_mask;
+      addr = addr >> m_bid_shift;
+      bid = addr & m_bid_mask;
+      addr = addr >> m_rid_shift;
+      rid = addr;
+    } else {
+      bid_xor = (addr >> m_bid_xor_shift) & m_bid_mask;
+      cid = addr & m_cid_mask;
+      addr = (addr >> m_bid_shift) / num_mc;
 
-  // insert a new request to DRB
-  insert_req_in_drb(mem_req, bid, rid, cid);
-  on_insert(mem_req, bid, rid, cid);
+      bid = addr & m_bid_mask;
+      addr = addr >> m_rid_shift;
+      rid = addr;
+    }
 
-  STAT_EVENT(TOTAL_DRAM);
+    ASSERTM(rid >= 0, "addr:0x%llx cid:%llu bid:%llu rid:%llu type:%s\n", addr,
+        cid, bid, rid, mem_req_c::mem_req_type_name[mem_req->m_type]);
 
-  ++m_total_req;
-  mem_req->m_state = MEM_DRAM_START;
+    // Permutation-based Interleaving
+    if (*KNOB(KNOB_DRAM_BANK_XOR_INDEX)) {
+      bid = bid ^ bid_xor;
+    }
 
-  DEBUG("MC[%d] new_req:%d bid:%llu rid:%llu cid:%llu\n", m_id, mem_req->m_id,
+    // check buffer full
+    if (m_buffer_free_list[bid].empty()) {
+      flush_prefetch(bid);
+
+      if (m_buffer_free_list[bid].empty()) {
+        return false;
+      }
+    }
+
+    // insert a new request to DRB
+    insert_req_in_drb(mem_req, bid, rid, cid);
+    on_insert(mem_req, bid, rid, cid);
+
+    STAT_EVENT(TOTAL_DRAM);
+
+    ++m_total_req;
+    mem_req->m_state = MEM_DRAM_START;
+
+    DEBUG("MC[%d] new_req:%d bid:%llu rid:%llu cid:%llu\n", m_id, mem_req->m_id,
         bid, rid, cid);
 
-  return true;
+    return true;
+  } 
 }
 
 // When the buffer is full, flush all prefetches.
@@ -356,14 +418,15 @@ void dram_ctrl_c::run_a_cycle(bool pll_lock) {
     ++m_cycle;
     return;
   }
-  send();
+  send(); // send finished requests to noc
   if (m_tmp_output_buffer) {
     delay_packet();
   }
   channel_schedule();
   bank_schedule();
+  cme_schedule();
 
-  receive();
+  receive(); // get packets from noc & insert to DRAM Buffer
 
   // starvation check
   progress_check();
@@ -599,8 +662,51 @@ void dram_ctrl_c::send(void) {
     }
   }
 
+  req_type_checked[0] = false;
+  req_type_checked[1] = false;
+
+  req_type_allowed[0] = true;
+  req_type_allowed[1] = true;
+
+  vector<mem_req_s*> cme_temp_list;
+
+  for (int ii = 0; ii < max_iter; ++ii) {
+    req_type_allowed[0] = !req_type_checked[0];
+    req_type_allowed[1] = !req_type_checked[1];
+    // check both CPU and GPU requests
+    if (req_type_checked[0] == true && req_type_checked[1] == true) break;
+
+    for (auto I = m_cmeout_buffer->begin(), E = m_cmeout_buffer->end(); I != E;
+        ++I) {
+      mem_req_s* req = (*I);
+      if (req_type_allowed[req->m_acc] == false) continue;
+
+      req_type_checked[req->m_acc] = true;
+      req->m_state = CME_NOC_DONE;
+      req->m_msg_type = NOC_FILL;
+
+      bool insert_packet = 
+        NETWORK->send(req, MEM_MC, m_id, MEM_LLC, req->m_cache_id[MEM_LLC]);
+
+      if (!insert_packet) {
+        DEBUG("MC[%d] req:%d addr:0x%llx type:%s noc busy\n", m_id, req->m_id,
+              req->m_addr, mem_req_c::mem_req_type_name[req->m_type]);
+        break;
+      }
+
+      cme_temp_list.push_back(req);
+      if (*KNOB(KNOB_BUG_DETECTOR_ENABLE) && *KNOB(KNOB_ENABLE_NEW_NOC)) {
+        m_simBase->m_bug_detector->allocate_noc(req);
+      }
+    }
+  }
+
   for (auto I = temp_list.begin(), E = temp_list.end(); I != E; ++I) {
     m_output_buffer->remove((*I));
+  }
+
+  for (auto I = cme_temp_list.begin(), E = cme_temp_list.end(); I != E; ++I) {
+    m_cmeout_buffer->remove((*I));
   }
 }
 
@@ -611,6 +717,12 @@ void dram_ctrl_c::receive(void) {
 
   if (req && insert_new_req(req)) {
     NETWORK->receive_pop(MEM_MC, m_id);
+
+    // Joonho : Get address range
+    if (m_accessed_addr.find(req->m_addr) == m_accessed_addr.end()) {
+      m_accessed_addr.insert(req->m_addr);
+    }
+
     if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
       m_simBase->m_bug_detector->deallocate_noc(req);
     }
@@ -770,6 +882,35 @@ void dram_ctrl_c::channel_schedule_data(void) {
       } else
         break;
     }
+  }
+}
+
+// TODO : a more precise modeling of CME BW & latency
+void dram_ctrl_c::cme_schedule() {
+  vector<cme_entry_s*> tmp_list;
+
+  for (auto I = m_cmein_buffer->begin(), E = m_cmein_buffer->end(); I != E; 
+      ++I) {
+    Counter start_cycle = (*I)->m_start_req;
+    Counter cycles = m_simBase->m_core_cycle[0] - start_cycle;
+
+    if (cycles < *KNOB(KNOB_CME_LATENCY)) {
+      (*I)->m_cycles++;
+    } else {
+      tmp_list.push_back((*I));
+    }
+  }
+
+  for (auto I = tmp_list.begin(), E = tmp_list.end(); I != E; ++I) {
+    mem_req_s *req = (*I)->m_req;
+
+    m_cmeout_buffer->push_back(req);
+    (*I)->reset();
+    m_cme_free_list->push_back((*I));
+    m_cmein_buffer->remove((*I));
+
+    STAT_EVENT(TOTAL_DRAM_MERGE);
+    --m_total_req;
   }
 }
 
