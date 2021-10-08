@@ -1,2 +1,2 @@
 1
-../../macsim-traces/x86/matmul.txt
+../sst-unit-test/traces/x86/mergesort.txt
