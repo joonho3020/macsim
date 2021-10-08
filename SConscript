@@ -179,11 +179,30 @@ DRAMSIM2_srcs = [
   'src/DRAMSim2/Transaction.cpp',
 ]
 
-
-
-
 if flags['dram'] == '1':
   env.Library('dramsim', DRAMSIM2_srcs, CPPDEFINES=['NO_STORAGE', 'DEBUG_BUILD', 'LOG_OUTPUT'])
+
+
+#########################################################################################
+# DRAMSIM3
+#########################################################################################
+DRAMSIM3_srcs = [
+  'src/DRAMsim3/src/bankstate.cc',
+  'src/DRAMsim3/src/channel_state.cc',
+  'src/DRAMsim3/src/command_queue.cc',
+  'src/DRAMsim3/src/common.cc',
+  'src/DRAMsim3/src/configuration.cc',
+  'src/DRAMsim3/src/controller.cc',
+  'src/DRAMsim3/src/dram_system.cc',
+  'src/DRAMsim3/src/hmc.cc',
+  'src/DRAMsim3/src/memory_system.cc',
+  'src/DRAMsim3/src/refresh.cc',
+  'src/DRAMsim3/src/simple_stats.cc',
+  'src/DRAMsim3/src/timing.cc'
+]
+
+if flags['dram3'] == '1':
+  env.Library('dramsim3', DRAMSIM3_srcs, CPPDEFINES=['NO_STORAGE', 'DEBUG_BUILD', 'LOG_OUTPUT'])
 
 
 #########################################################################################
@@ -236,6 +255,7 @@ macsim_src = [
   'src/dram.cc',
   'src/dram_ctrl.cc',
   'src/dram_dramsim.cc',
+  'src/dram_dramsim3.cc',
   'src/exec.cc',
   'src/factory_class.cc',
   'src/fetch_factory.cc',
@@ -299,6 +319,15 @@ if flags['dram'] == '1':
   libraries.append('dramsim')
   env['CPPDEFINES'].append('DRAMSIM')
   env['CPPPATH'] += ['#src/DRAMSim2']
+  env['LIBPATH'] += [Dir('.')]
+
+if flags['dram3'] == '1':
+  libraries.append('dramsim3')
+  env['CPPDEFINES'].append('DRAMSIM3')
+  env['CPPPATH'] += ['#src/DRAMsim3/src']
+  env['CPPPATH'] += ['#src/DRAMsim3/ext/fmt/include']
+  env['CPPPATH'] += ['#src/DRAMsim3/ext/fmt/include/fmt']
+  env['CPPPATH'] += ['#src/DRAMsim3/ext/headers']
   env['LIBPATH'] += [Dir('.')]
 
 if flags['iris'] == '1':
