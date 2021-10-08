@@ -52,6 +52,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "statistics.h"
 #include "memory.h"
 #include "dram.h"
+#include "dram_dramsim.h"
 #include "utils.h"
 #include "bug_detector.h"
 #include "fetch_factory.h"
