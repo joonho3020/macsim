@@ -63,8 +63,8 @@ dram_dramsim3_c::dram_dramsim3_c(macsim_c* simBase) : dram_c(simBase) {
   m_tmp_output_buffer = new list<mem_req_s*>;
   m_pending_request = new list<mem_req_s*>;
 
-  std::string config_file = "./DDR5_8Gb_x8_1866.ini";
-  std::string working_dir = "../../macsim-stats/dramsim";
+  std::string config_file = *KNOB(KNOB_DRAMSIM3_CONFIG);
+  std::string working_dir = *KNOB(KNOB_DRAMSIM3_OUT);
   m_dramsim = new MemorySystem(config_file, working_dir, NULL, NULL);
 
   std::function<void(uint64_t)> read_cb;

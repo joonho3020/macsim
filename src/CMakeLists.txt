@@ -79,9 +79,7 @@ target_link_libraries(${PROJECT_NAME} ${DRAMSIM3_SRC_DIR}/libdramsim3.a libz.a)
 target_include_directories(${PROJECT_NAME} PUBLIC ${DRAMSIM3_SRC_DIR}/src)
 add_dependencies(${PROJECT_NAME} dramsim_lib)
 
-# target_compile_options(${PROJECT_NAME} PUBLIC -Wall)
 
 set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../bin)
 install(TARGETS ${PROJECT_NAME} DESTINATION ${BIN_DIR})
-install(FILES ${DRAMSIM3_SRC_DIR}/configs/DDR5_8Gb_x8_1866.ini 
-        DESTINATION ${BIN_DIR})
+install(DIRECTORY ${DRAMSIM3_SRC_DIR}/configs DESTINATION ${BIN_DIR})

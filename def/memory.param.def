@@ -250,3 +250,10 @@ param<PAGE_EVICTION_LATENCY, page_eviction_latency, long, 1000>
 param<BATCH_PROCESSING_OVERHEAD, batch_processing_overhead, long, 50000>
 
 param<FAULT_BUFFER_SIZE, fault_buffer_size, long, 512>
+
+param<CME_ENABLE, cme_enable, bool, false>
+param<CME_RANGE, cme_addr_min, uint64_t, 0>
+param<CME_LATENCY, cme_latency, long, 300>
+
+param<DRAMSIM3_CONFIG, dramsim3_config, string, ./config/DDR5_8Gb_x8_1866.ini>
+param<DRAMSIM3_OUT, dramsim3_out, string, .>

@@ -112,6 +112,8 @@ dram_num_banks 16
 dram_num_channel 8
 dram_rowbuffer_size 2048
 dram_scheduling_policy DRAMSIM3
+dramsim3_config ./configs/DDR5_8Gb_x8_1866.ini
+dramsim3_out ../../macsim-stats/dramsim
 
 # Network
 noc_topology mesh
