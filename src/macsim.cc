@@ -53,6 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "memory.h"
 #include "dram.h"
 #include "dram_dramsim.h"
+#include "dram_dramsim3.h"
 #include "utils.h"
 #include "bug_detector.h"
 #include "fetch_factory.h"
@@ -182,6 +183,9 @@ void macsim_c::register_functions(void) {
 #endif
 #ifdef DRAMSIM
   dram_factory_c::get()->register_class("DRAMSIM", dramsim_controller);
+#endif
+#ifdef DRAMSIM3
+  dram_factory_c::get()->register_class("DRAMSIM3", dramsim3_controller);
 #endif
 #ifdef USING_SST
   dram_factory_c::get()->register_class("VAULTSIM", vaultsim_controller);

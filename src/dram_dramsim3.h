@@ -27,78 +27,87 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 /**********************************************************************************************
- * File         : dram.h
- * Author       : HPArch Research Group
- * Date         : 2/18/2013
+ * File         : dram_dramsim3.h
+ * Author       : Joonho
+ * Date         : 10/8/2021
  * SVN          : $Id: dram.h 867 2009-11-05 02:28:12Z kacear $:
- * Description  : Memory controller
+ * Description  : DRAMSim3 interface
  *********************************************************************************************/
 
-#ifndef DRAM_H
-#define DRAM_H
+#ifndef DRAM_DRAMSIM3_H
+#define DRAM_DRAMSIM3_H
 
-#include "macsim.h"
+#ifdef DRAMSIM3
+#include <list>
+
+#include "dram.h"
+#include "memreq_info.h"
+#include "network.h"
+
+namespace dramsim3 {
+class MemorySystem;
+};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-/// \brief Memory controller base class
+/// \brief MC - DRAMSim3 interface
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class dram_c
+class dram_dramsim3_c : public dram_c
 {
 public:
   /**
    * Constructor
    */
-  dram_c(macsim_c* simBase);
+  dram_dramsim3_c(macsim_c* simBase);
 
   /**
    * Destructor
    */
-  virtual ~dram_c() = 0;
+  ~dram_dramsim3_c();
 
   /**
-   * Print all requests in the DRAM request buffer
+   * Print all requests in DRB
    */
-  virtual void print_req(void) = 0;
+  void print_req(void);
 
   /**
    * Initialize MC
    */
-  virtual void init(int id) = 0;
+  void init(int id);
 
   /**
    * Tick a cycle
    */
-  virtual void run_a_cycle(bool) = 0;
+  void run_a_cycle(bool);
 
-protected:
+private:
+  dram_dramsim3_c();  // do not implement
+
+  /**
+   * DRAMSim3 read callback function
+   */
+  void read_callback(unsigned, uint64_t);
+
+  /**
+   * DRAMSim3 write callback function
+   */
+  void write_callback(unsigned, uint64_t);
+
   /**
    * Send a packet to NOC
    */
-  virtual void send(void) = 0;
+  void send(void);
 
   /**
    * Receive a packet from NOC
    */
-  virtual void receive(void) = 0;
+  void receive(void);
 
 private:
-  dram_c();  // do not implement
-
-protected:
-  macsim_c* m_simBase; /**< simulation base class */
-  Counter m_cycle; /**< dram clock cycle */
-  int m_id; /**< MC id */
+  list<mem_req_s*>* m_output_buffer; /**< output buffer */
+  list<mem_req_s*>* m_tmp_output_buffer; /**< output buffer */
+  list<mem_req_s*>* m_pending_request; /**< pending request */
+  dramsim3::MemorySystem* m_dramsim; /**< dramsim3 instance */
 };
-
-// wrapper function to allocate a dram scheduler
-dram_c* fcfs_controller(macsim_c* simBase);
-dram_c* frfcfs_controller(macsim_c* simBase);
-dram_c* simple_controller(macsim_c* simBase);
-dram_c* dramsim_controller(macsim_c* simBase);
-dram_c* dramsim3_controller(macsim_c* simBase);
-dram_c* ramulator_controller(macsim_c* simBase);
-#ifdef USING_SST
-dram_c* vaultsim_controller(macsim_c* simBase);
 #endif
 
 #endif
