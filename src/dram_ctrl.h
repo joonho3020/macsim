@@ -99,20 +99,6 @@ typedef struct drb_entry_s {
 } drb_entry_s;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-/// \brief CME request entry class
-///////////////////////////////////////////////////////////////////////////////////////////////
-typedef struct cme_entry_s {
-  mem_req_s* m_req; /**< memory request pointer */
-  Counter m_start_req; /**< last touched cycle */
-  Counter m_cycles; /**< cycles since request start */
-  macsim_c* m_simBase; /**< macsim_c base class for simulation globals */
-
-  cme_entry_s(macsim_c* simBase);
-  void set(mem_req_s* req, Counter cur_tick);
-  void reset();
-} cme_entry_s;
-
-///////////////////////////////////////////////////////////////////////////////////////////////
 /// \brief Base dram scheduling class (FCFS)
 ///////////////////////////////////////////////////////////////////////////////////////////////
 class dram_ctrl_c : public dram_c
@@ -203,7 +189,7 @@ protected:
   /**
    * schedule CME
    */
-  void cme_schedule();
+  void cme_schedule() override;
 
   /**
    * Check whether data bus of a channel is available
@@ -292,12 +278,6 @@ protected:
   list<mem_req_s*>* m_output_buffer; /**< output buffer */
   list<mem_req_s*>*
     m_tmp_output_buffer; /**< buffer to simulate any additional dram latency */
-
-  // Joonho : for CXL memory expander
-  set<Addr> m_accessed_addr; /** for debugging */
-  list<cme_entry_s*>* m_cme_free_list;
-  list<cme_entry_s*>* m_cmein_buffer;
-  list<mem_req_s*>* m_cmeout_buffer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

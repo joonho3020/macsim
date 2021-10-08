@@ -37,7 +37,24 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef DRAM_H
 #define DRAM_H
 
+#include <set>
+#include <list>
+
 #include "macsim.h"
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief CME request entry class
+///////////////////////////////////////////////////////////////////////////////////////////////
+typedef struct cme_entry_s {
+  mem_req_s* m_req; /**< memory request pointer */
+  Counter m_start_req; /**< last touched cycle */
+  Counter m_cycles; /**< cycles since request start */
+  macsim_c* m_simBase; /**< macsim_c base class for simulation globals */
+
+  cme_entry_s(macsim_c* simBase);
+  void set(mem_req_s* req, Counter cur_tick);
+  void reset();
+} cme_entry_s;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /// \brief Memory controller base class
@@ -81,6 +98,11 @@ protected:
    */
   virtual void receive(void) = 0;
 
+  /**
+   * schedule CME
+   */
+  virtual void cme_schedule(void) { return; };
+
 private:
   dram_c();  // do not implement
 
@@ -88,6 +110,12 @@ protected:
   macsim_c* m_simBase; /**< simulation base class */
   Counter m_cycle; /**< dram clock cycle */
   int m_id; /**< MC id */
+
+  // Joonho : for CXL memory expander
+  set<Addr> m_accessed_addr; /** for debugging */
+  list<cme_entry_s*>* m_cme_free_list;
+  list<cme_entry_s*>* m_cmein_buffer;
+  list<mem_req_s*>* m_cmeout_buffer;
 };
 
 // wrapper function to allocate a dram scheduler

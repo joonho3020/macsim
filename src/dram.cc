@@ -34,10 +34,32 @@ POSSIBILITY OF SUCH DAMAGE.
  * Description  : Memory controller
  *********************************************************************************************/
 
+#include <iostream>
 #include "dram.h"
 
 dram_c::dram_c(macsim_c* simBase) : m_simBase(simBase) {
+  // FIXME
+  // CME buffers
+  m_cmein_buffer = new list<cme_entry_s*>;
+  m_cmeout_buffer = new list<mem_req_s*>;
+  m_cme_free_list = new list<cme_entry_s*>;
+  for (int ii = 0; ii < 30; ii++) {
+    cme_entry_s* new_entry = new cme_entry_s(m_simBase);
+    m_cme_free_list->push_back(new_entry);
+  }
 }
 
 dram_c::~dram_c() {
+  if (!m_accessed_addr.empty()) {
+    std::cerr << "min access addr: " << 
+      hex << *m_accessed_addr.begin() << std::endl;
+    std::cerr << "max access addr:" << 
+      hex << *m_accessed_addr.rbegin() << std::endl;
+  } else {
+    std::cerr << "No accessed memory" << std::endl;
+  }
+
+  delete m_cmein_buffer;
+  delete m_cmeout_buffer;
+  delete m_cme_free_list;
 }

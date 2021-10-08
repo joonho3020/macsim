@@ -258,25 +258,10 @@ dram_ctrl_c::dram_ctrl_c(macsim_c* simBase) : dram_c(simBase) {
   } else {
     m_tmp_output_buffer = NULL;
   }
-  
-  // FIXME
-  // CME buffers
-  m_cmein_buffer = new list<cme_entry_s*>;
-  m_cmeout_buffer = new list<mem_req_s*>;
-  m_cme_free_list = new list<cme_entry_s*>;
-  for (int ii = 0; ii < 30; ii++) {
-    cme_entry_s* new_entry = new cme_entry_s(m_simBase);
-    m_cme_free_list->push_back(new_entry);
-  }
 }
 
 // dram controller destructor
 dram_ctrl_c::~dram_ctrl_c() {
-  std::cerr << "min access addr: " << 
-    hex << *m_accessed_addr.begin() << std::endl;
-  std::cerr << "max access addr:" << 
-    hex << *m_accessed_addr.rbegin() << std::endl;
-
   delete[] m_buffer;
   delete[] m_buffer_free_list;
   delete[] m_current_list;
@@ -287,10 +272,6 @@ dram_ctrl_c::~dram_ctrl_c() {
   delete[] m_bank_timestamp;
   delete m_output_buffer;
   delete m_tmp_output_buffer;
-
-  delete m_cmein_buffer;
-  delete m_cmeout_buffer;
-  delete m_cme_free_list;
 }
 
 // initialize dram controller
