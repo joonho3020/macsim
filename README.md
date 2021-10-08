@@ -77,3 +77,17 @@ If you have a question, please use github issue ticket.
 * Here are two example configurations of SST+MacSim.
   * A multi-socket system with cache coherence model: ![](http://comparch.gatech.edu/hparch/images/sst+macsim_conf_1.png)
   * A CPU+GPU heterogeneous system with shared memory: ![](http://comparch.gatech.edu/hparch/images/sst+macsim_conf_2.png)
+
+
+## Notes
+```
+mkdir build
+cd build
+cmake ..
+make -j<cores>
+make install
+```
+
+## TODOs
+- Interleaving policy btw DIMM & CME
+- Model BW & PCIE latency of CME
