@@ -698,14 +698,13 @@ void dram_ctrl_c::receive(void) {
 
   if (req && insert_new_req(req)) {
     NETWORK->receive_pop(MEM_MC, m_id);
+    if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
+      m_simBase->m_bug_detector->deallocate_noc(req);
+    }
 
     // Joonho : Get address range
     if (m_accessed_addr.find(req->m_addr) == m_accessed_addr.end()) {
       m_accessed_addr.insert(req->m_addr);
-    }
-
-    if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
-      m_simBase->m_bug_detector->deallocate_noc(req);
     }
   }
 }

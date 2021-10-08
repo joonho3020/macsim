@@ -90,9 +90,15 @@ void dram_dramsim3_c::init(int id) {
   m_id = id;
 }
 
-void dram_dramsim3_c::run_a_cycle(bool temp) {
+void dram_dramsim3_c::run_a_cycle(bool pll_lock) {
+/* if (pll_lock) { */
+/* ++m_cycle; */
+/* return; */
+/* } */
+
   send();
   m_dramsim->ClockTick();
+  cme_schedule();
   receive();
   ++m_cycle;
 }
@@ -147,25 +153,26 @@ void dram_dramsim3_c::receive(void) {
   mem_req_s* req = NETWORK->receive(MEM_MC, m_id);
   if (!req) return;
 
-  uint64_t addr = static_cast<uint64_t>(req->m_addr);
-  bool is_write = req->m_type == MRT_WB;
-  bool will_accept = m_dramsim->WillAcceptTransaction(addr, is_write);
-
-  if (will_accept) {
-    m_dramsim->AddTransaction(addr, is_write);
-
-    STAT_EVENT(TOTAL_DRAM);
-    m_pending_request->push_back(req);
+  if (req && insert_new_req(req)) {
     NETWORK->receive_pop(MEM_MC, m_id);
     if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
       m_simBase->m_bug_detector->deallocate_noc(req);
+    }
+
+    STAT_EVENT(TOTAL_DRAM);
+
+    // Get address range (Debug purpose)
+    if (m_accessed_addr.find(req->m_addr) == m_accessed_addr.end()) {
+      m_accessed_addr.insert(req->m_addr);
     }
   }
 }
 
 void dram_dramsim3_c::send(void) {
   vector<mem_req_s*> temp_list;
+  vector<mem_req_s*> cme_temp_list;
 
+  // take care of DIMM requests
   for (auto I = m_tmp_output_buffer->begin(), E = m_tmp_output_buffer->end();
        I != E; ++I) {
     mem_req_s* req = *I;
@@ -202,6 +209,93 @@ void dram_dramsim3_c::send(void) {
 
   for (auto I = temp_list.begin(), E = temp_list.end(); I != E; ++I) {
     m_output_buffer->remove((*I));
+  }
+
+  // take care of CME requests
+  for (auto I = m_cmeout_buffer->begin(), E = m_cmeout_buffer->end(); I != E;
+      ++I) {
+    mem_req_s* req = (*I);
+    req->m_state = CME_NOC_DONE;
+    req->m_msg_type = NOC_FILL;
+
+    bool insert_packet = 
+      NETWORK->send(req, MEM_MC, m_id, MEM_LLC, req->m_cache_id[MEM_LLC]);
+
+    if (!insert_packet) {
+      DEBUG("MC[%d] req:%d addr:0x%llx type:%s noc busy\n", m_id, req->m_id,
+          req->m_addr, mem_req_c::mem_req_type_name[req->m_type]);
+      break;
+    }
+
+    cme_temp_list.push_back(req);
+    if (*KNOB(KNOB_BUG_DETECTOR_ENABLE) && *KNOB(KNOB_ENABLE_NEW_NOC)) {
+      m_simBase->m_bug_detector->allocate_noc(req);
+    }
+  }
+
+  for (auto I = cme_temp_list.begin(), E = cme_temp_list.end(); I != E; ++I) {
+    m_cmeout_buffer->remove((*I));
+  }
+}
+
+  // TODO : sophisticated interleaving policy is required
+bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
+  Addr addr = mem_req->m_addr;
+  bool is_write = (mem_req->m_type == MRT_WB);
+
+  // insert to CME
+  if (addr >= *KNOB(KNOB_CME_RANGE) && *KNOB(KNOB_CME_ENABLE)) {
+    if (m_cme_free_list->empty()) {
+      return false;
+    } else {
+      cme_entry_s* new_entry = m_cme_free_list->front();
+      m_cme_free_list->pop_front();
+
+      new_entry->set(mem_req, m_simBase->m_core_cycle[0]);
+      m_cmein_buffer->push_back(new_entry);
+      mem_req->m_state = CME_NOC_START;
+      return true;
+    }
+  }
+  // insert to DIMM
+  else {
+    uint64_t addr_ = static_cast<uint64_t>(addr);
+
+    bool will_accept = m_dramsim->WillAcceptTransaction(addr_, is_write);
+    if (will_accept) {
+      m_dramsim->AddTransaction(addr_, is_write);
+      m_pending_request->push_back(mem_req);
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+void dram_dramsim3_c::cme_schedule() {
+  vector<cme_entry_s*> tmp_list;
+
+  for (auto I = m_cmein_buffer->begin(), E = m_cmein_buffer->end(); I != E; 
+      ++I) {
+    Counter start_cycle = (*I)->m_start_req;
+    Counter cycles = m_simBase->m_core_cycle[0] - start_cycle;
+
+    if (cycles < *KNOB(KNOB_CME_LATENCY)) {
+      (*I)->m_cycles++;
+    } else {
+      tmp_list.push_back((*I));
+    }
+  }
+
+  for (auto I = tmp_list.begin(), E = tmp_list.end(); I != E; ++I) {
+    mem_req_s *req = (*I)->m_req;
+
+    m_cmeout_buffer->push_back(req);
+    (*I)->reset();
+    m_cme_free_list->push_back((*I));
+    m_cmein_buffer->remove((*I));
+
+    STAT_EVENT(TOTAL_DRAM_MERGE);
   }
 }
 

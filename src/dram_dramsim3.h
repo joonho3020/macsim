@@ -102,6 +102,16 @@ private:
    */
   void receive(void);
 
+  /**
+   * Schedule a pending CME req
+   */
+  void cme_schedule(void) override;
+
+  /**
+   * insert a new request from NOC to DIMM or CME
+   */
+  bool insert_new_req(mem_req_s* mem_req);
+
 private:
   list<mem_req_s*>* m_output_buffer; /**< output buffer */
   list<mem_req_s*>* m_tmp_output_buffer; /**< output buffer */
