@@ -67,6 +67,9 @@ public:
    */
   void run_a_cycle(bool pll_locked);
 
+  /**
+   * Print for debugging
+   */
   void print_cxlt3_info();
 
 private:

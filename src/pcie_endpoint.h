@@ -65,8 +65,14 @@ public:
    */
   virtual void run_a_cycle(bool pll_locked);
 
+  /**
+   * Receive packet from transmit side & put in rx physical q
+   */
   bool insert_rxphys(packet_info_s* pkt);
 
+  /**
+   * Print for debugging
+   */
   void print_ep_info();
 
 private:

@@ -70,6 +70,9 @@ public:
    */
   mem_req_s* pop_request();
 
+  /**
+   * Print for debugging
+   */
   void print_rc_info();
 
 private:
