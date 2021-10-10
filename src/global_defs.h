@@ -117,6 +117,10 @@ class CoreStatistics;
 class cache_partition_framework_c;
 class dyfr_c;
 class MMU;
+class ioctrl_c;
+class pcie_ep_c;
+class pcie_rc_c;
+class cxlt3_c;
 
 template <class T>
 class pqueue_c;
@@ -148,6 +152,7 @@ typedef struct pref_info_s pref_info_s;
 typedef struct HWP_Struct HWP;
 typedef struct gpu_allocq_entry_s gpu_allocq_entry_s;
 typedef struct thread_stat_s thread_stat_s;
+typedef struct packet_info_s packet_info_s;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Function declarations

@@ -33,18 +33,30 @@ POSSIBILITY OF SUCH DAMAGE.
  * SVN          : $Id: cxl_t3.h 867 2009-11-05 02:28:12Z kacear $:
  * Description  : PCIe endpoint device
  *********************************************************************************************/
+#include <cassert>
+#include <iostream>
 
 #include "pcie_endpoint.h"
 
 #include "memreq_info.h"
+#include "utils.h"
 #include "all_knobs.h"
 #include "all_stats.h"
 
 int pcie_ep_c::m_unique_id = 0;
 
 pcie_ep_c::pcie_ep_c(macsim_c* simBase) {
+  // simulation related
+  m_simBase = simBase;
+  m_cycle = 0;
+
   // set memory request size
   m_memreq_size = *KNOB(KNOB_PCIE_MEMREQ_BYTES);
+  m_rr_idx = 0;
+  m_lanes = *KNOB(KNOB_PCIE_LANES);
+  m_perlane_bw = *KNOB(KNOB_PCIE_PER_LANE_BW);
+  m_prev_txphys_cycle = 0;
+  m_peer_ep = NULL;
 
   // initialize VC buffers & credit
   m_vc_cnt = *KNOB(KNOB_PCIE_VC_CNT);
@@ -71,10 +83,6 @@ pcie_ep_c::pcie_ep_c(macsim_c* simBase) {
   m_rxphys_size = m_phys_cap;
   m_txphys_q = new deque<packet_info_s*>();
   m_rxphys_q = new deque<packet_info_s*>();
-
-  // simulation related
-  m_simBase = simBase;
-  m_cycle = 0;
 }
 
 pcie_ep_c::~pcie_ep_c() {
@@ -84,9 +92,11 @@ pcie_ep_c::~pcie_ep_c() {
   delete m_rxphys_q;
 }
 
-void pcie_ep_c::init(int id, pool_c<packet_info_s>* pkt_pool) {
+void pcie_ep_c::init(int id, pool_c<packet_info_s>* pkt_pool, 
+    pcie_ep_c* peer) {
   m_id = id;
   m_pkt_pool = pkt_pool;
+  m_peer_ep = peer;
 }
 
 void pcie_ep_c::run_a_cycle(bool pll_locked) {
@@ -94,31 +104,141 @@ void pcie_ep_c::run_a_cycle(bool pll_locked) {
     m_cycle++;
     return;
   }
+
+  // receive requests
+  end_transaction();
+  process_rxlogic();
   process_rxphys();
+
+  // send requests
   process_txphys();
   process_txlogic();
+  start_transaction();
 
   m_cycle++;
 }
 
+bool pcie_ep_c::insert_rxphys(packet_info_s* pkt) {
+  if (m_rxphys_q->size() >= m_rxphys_size) {
+    return false;
+  } else {
+    m_rxphys_q->push_back(pkt);
+    return true;
+  }
+}
+
+void pcie_ep_c::start_transaction() {
+  return;
+}
+
+void pcie_ep_c::end_transaction() {
+  return;
+}
+
 void pcie_ep_c::process_txlogic() {
+  // round robin policy
+  for (int ii = m_rr_idx, cnt = 0; cnt < m_vc_cnt; 
+      cnt++, ii = (ii + 1)  % m_vc_cnt) {
+    // VC buffer emtpy
+    if (m_txvc_buff[ii].empty()) {
+      continue;
+    }
+    // VC buffer not empty
+    else {
+      bool is_tx = true;
+      packet_info_s* pkt = m_txvc_buff[ii].front();
+
+      // don't consider about flow control packets now
+      if (!check_credit(pkt)) {
+        continue;
+      } else {
+        if (!phys_layer_full(is_tx)) {
+          decrease_credit(pkt);
+          pull_vc_buffer(pkt->m_vc_id, m_txvc_size, m_txvc_buff);
+          insert_tx_phys(pkt, false);  // insert to back
+          break;
+        }
+      }
+    }
+  }
+  m_rr_idx = (m_rr_idx + 1) % m_vc_cnt;
 }
 
 void pcie_ep_c::process_txphys() {
+  if (m_txphys_q->size() == 0) {
+    return;
+  }
+
+  packet_info_s* pkt = m_txphys_q->front();
+
+  // insert the packet to peer's receive phys q
+  if (m_peer_ep->insert_rxphys(pkt)) {
+    m_txphys_q->pop_front();
+
+    // packets are sent serially
+    Counter lat = get_phys_latency(pkt);
+    pkt->m_phys_start = m_prev_txphys_cycle;
+    pkt->m_phys_end = m_prev_txphys_cycle + lat;
+    m_prev_txphys_cycle = pkt->m_phys_end;
+  }
 }
 
 void pcie_ep_c::process_rxphys() {
+  while (m_rxphys_q->size()) {
+    packet_info_s* pkt = m_rxphys_q->front();
+
+    // finished physical layer
+    if (pkt->m_phys_end <= m_cycle) {
+      assert(m_rxvc_size[pkt->m_vc_id] >= pkt->m_bytes);
+      m_rxphys_q->pop_front();
+      insert_vc_buff(pkt->m_vc_id, m_rxvc_size, m_rxvc_buff, pkt);
+    } else {
+      break;
+    }
+  }
+}
+
+void pcie_ep_c::process_rxlogic() {
+  // TODO
 }
 
 Counter pcie_ep_c::get_phys_latency(packet_info_s* pkt) {
+  return static_cast<Counter>(pkt->m_bytes * m_perlane_bw / m_lanes);
 }
 
-void pcie_ep_c::update_credit(packet_info_s* flow_pkt, bool increment) {
+void pcie_ep_c::decrease_credit(packet_info_s* flow_pkt) {
+  m_credit[flow_pkt->m_vc_id] -= flow_pkt->m_bytes;
+}
+
+void pcie_ep_c::update_credit(packet_info_s* fctrl_pkt) {
+  m_credit[fctrl_pkt->m_vc_id] = fctrl_pkt->m_credits;
+}
+
+void pcie_ep_c::update_credit(int vc_id, int credit) {
+  m_credit[vc_id] = credit;
 }
 
 bool pcie_ep_c::check_credit(packet_info_s* pkt) {
+  return pkt->m_bytes <= m_credit[pkt->m_vc_id];
 }
 
+bool pcie_ep_c::phys_layer_full(bool tx) {
+  if (tx) {
+    return m_txphys_q->size() >= m_txphys_size;
+  } else { // rx
+    return m_rxphys_q->size() >= m_rxphys_size;
+  }
+}
+
+void pcie_ep_c::insert_tx_phys(packet_info_s* pkt, bool front) {
+  if (front) {
+    m_txphys_q->push_front(pkt);
+  } else {
+    m_txphys_q->push_back(pkt);
+  }
+}
+
+// used for start_transaction
 bool pcie_ep_c::push_txvc(mem_req_s* mem_req) {
   // insert to VC buffer with maximum remaining capacity
   int max_remain_size = -1;
@@ -138,25 +258,103 @@ bool pcie_ep_c::push_txvc(mem_req_s* mem_req) {
   // found buffer to insert
   else {
     int vc_id = max_remain_id;
-    packet_info_s* new_pkt = m_pkt_pool->acquire_entry(m_simBase);
     Pkt_Type pkt_type = (mem_req->m_type == MRT_WB) ? PKT_MWR : PKT_MRD;
     Pkt_State pkt_state = PKT_TVC;
-    init_new_pkt(new_pkt, m_memreq_size, vc_id, pkt_type, pkt_state,
-      mem_req);
-    
-    m_txvc_size[vc_id] -= m_memreq_size;
+
+    packet_info_s* new_pkt = m_pkt_pool->acquire_entry(m_simBase);
+    init_new_pkt(new_pkt, m_memreq_size, vc_id, -1, 
+      pkt_type, pkt_state, mem_req);
+
+    insert_vc_buff(vc_id, m_txvc_size, m_txvc_buff, new_pkt);
+    return true;
   }
 }
 
+// used for end_transaction
 mem_req_s* pcie_ep_c::pull_rxvc() {
+  // pull from VC buffer with minimum remaining capacity
+  int min_remain_size = m_vc_cap;
+  int min_remain_id = -1;
+  for (int ii = 0; ii < m_vc_cnt; ii++) {
+    int cur_remain = m_rxvc_size[ii];
+    if (min_remain_size > cur_remain) {
+      min_remain_size = cur_remain;
+      min_remain_id = ii;
+    }
+  }
+
+  // all buffers are empty
+  if (min_remain_id == -1) {
+    return NULL;
+  }
+  // found buffer to pull
+  else {
+    int vc_id = min_remain_id;
+    packet_info_s* pkt = pull_vc_buffer(vc_id, m_rxvc_size, m_rxvc_buff);
+
+    // update peer endpoint credit
+    m_peer_ep->update_credit(vc_id, m_rxvc_size[vc_id]);
+
+    assert(pkt->m_vc_id == vc_id);
+    assert(pkt->m_req);
+
+    mem_req_s* mem_req = pkt->m_req;
+    m_pkt_pool->release_entry(pkt);
+    return mem_req;
+  }
 }
 
-void pcie_ep_c::init_new_pkt(packet_info_s* pkt, int bytes, int vc_id, 
-  Pkt_Type pkt_type, Pkt_State pkt_state, mem_req_s* req) {
+void pcie_ep_c::init_new_pkt(packet_info_s* pkt, int bytes, int vc_id,
+  int credits, Pkt_Type pkt_type, Pkt_State pkt_state, mem_req_s* req) {
   pkt->m_id = ++m_unique_id;
   pkt->m_bytes = bytes;
   pkt->m_vc_id = vc_id;
+  pkt->m_credits = credits;
   pkt->m_pkt_type = pkt_type;
   pkt->m_pkt_state = pkt_state;
   pkt->m_req = req;
+}
+
+void pcie_ep_c::insert_vc_buff(int vc_id, int* size,
+    list<packet_info_s*>* buff, packet_info_s* pkt) {
+  assert(size[vc_id] >= pkt->m_bytes);
+
+  size[vc_id] -= pkt->m_bytes;
+  buff[vc_id].push_back(pkt);
+}
+
+packet_info_s* pcie_ep_c::pull_vc_buffer(int vc_id, int *size, 
+    list<packet_info_s*>* buff) {
+  assert(buff[vc_id].size() != 0);
+
+  packet_info_s* pkt = buff[vc_id].front();
+  buff[vc_id].pop_front();
+  size[vc_id] += pkt->m_bytes;
+  return pkt;
+}
+
+void pcie_ep_c::print_ep_info() {
+  std::cout << "txvc" << ": ";
+  for (int ii = 0; ii < m_vc_cnt; ii++) {
+    for (auto pkt : m_txvc_buff[ii]) {
+      std::cout << std::hex << pkt->m_req->m_addr << "; ";
+    }
+  }
+
+  std::cout << "txphys" << ": ";
+  for (auto pkt : *m_txphys_q) {
+    std::cout << std::hex << pkt->m_req->m_addr << "; ";
+  }
+
+  std::cout << "rxvc" << ": ";
+  for (int ii = 0; ii < m_vc_cnt; ii++) {
+    for (auto pkt : m_rxvc_buff[ii]) {
+      std::cout << std::hex << pkt->m_req->m_addr << "; ";
+    }
+  }
+
+  std::cout << "rxphys" << ": ";
+  for (auto pkt : *m_rxphys_q) {
+    std::cout << std::hex << pkt->m_req->m_addr << "; ";
+  }
 }

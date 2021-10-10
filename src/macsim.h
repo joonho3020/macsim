@@ -144,6 +144,11 @@ public:
   void init_network(void);
 
   /**
+   * Initialize IO
+   */
+  void init_io(void);
+
+  /**
    * Open trace files
    */
   void open_traces(string trace_file);
@@ -297,12 +302,14 @@ public:
 
   dyfr_c *m_dyfr; /**< dynamic frequency class> */
   unique_ptr<MMU> m_MMU; /**< memory management unit> */
+  ioctrl_c *m_ioctrl; /**< io domain controller */
 
 private:
   macsim_c *m_simBase; /**< self-reference for macro usage */
 
   int m_num_sim_cores;
 
+  int CLOCK_IO;
   int CLOCK_LLC;
   int CLOCK_NOC;
   int CLOCK_MC;

@@ -38,12 +38,57 @@ POSSIBILITY OF SUCH DAMAGE.
 #define CXLT3_H
 
 #ifdef DRAMSIM3
+#include <list>
+
 #include "dram.h"
 #include "memreq_info.h"
-#include "network.h"
+#include "pcie_endpoint.h"
+#include "packet_info.h"
 
 namespace dramsim3{
   class MemorySystem;
+};
+
+class cxlt3_c : public pcie_ep_c
+{
+public:
+  /**
+   * Constructor
+   */
+  cxlt3_c(macsim_c* simBase);
+
+  /**
+   * Destructor
+   */
+  ~cxlt3_c();
+
+  /**
+   * Tick a cycle
+   */
+  void run_a_cycle(bool pll_locked);
+
+  void print_cxlt3_info();
+
+private:
+  /**
+   * Start PCIe transaction by inserting requests
+   */
+  void start_transaction() override;
+
+  /**
+   * End PCIe transaction by pulling requests
+   */
+  void end_transaction() override;
+
+  /**
+   * Process pending memory requests
+   */
+  void process_pending_req();
+
+private:
+  list<mem_req_s*>* m_pending_req;
+  list<mem_req_s*>* m_pushed_req;
+  list<mem_req_s*>* m_done_req;
 };
 
 #endif //DRAMSIM3

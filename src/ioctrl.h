@@ -27,31 +27,47 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 /**********************************************************************************************
- * File         : packet_info.cc
+ * File         : ioctrl.h
  * Author       : Joonho
- * Date         : 10/08/2021
- * SVN          : $Id: packet_info.h,v 1.5 2008-09-17 21:01:41 kacear Exp $:
- * Description  : PCIe packet information
+ * Date         : 10/10/2021
+ * SVN          : $Id: ioctrl.h 867 2009-11-05 02:28:12Z kacear $:
+ * Description  : IO domain
  *********************************************************************************************/
 
+#ifndef IOCTRL_H
+#define IOCTRL_H
+
+#include "macsim.h"
 #include "packet_info.h"
 
-packet_info_s::packet_info_s(macsim_c* simBase) {
-  init();
-  m_simBase = simBase;
-}
+class ioctrl_c {
+public:
+  /**
+   * Constructor
+   */
+  ioctrl_c();
+  
+  /**
+   * Destructor
+   */
+  ~ioctrl_c();
 
-void packet_info_s::init(void) {
-  m_id = 0;
-  m_bytes = 0;
-  m_phys_start = 0;
-  m_phys_end = 0;
-  m_done = false;
-  m_vc_id = -1;
-  m_credits = -1;
-  // m_pkt_src = -1;
-  // m_pkt_dst = -1;
-  m_pkt_type = PKT_NONE;
-  m_pkt_state = PKT_INVAL;
-  m_req = NULL;
-}
+  /**
+   * Initialized
+   */
+  void initialize(macsim_c* simBase);
+
+  /**
+   * Tick a cycle
+   */
+  void run_a_cycle(bool pll_locked);
+
+public:
+  pcie_rc_c* m_rc;
+  cxlt3_c* m_cme;
+
+private:
+  pool_c<packet_info_s>* m_pkt_pool;
+};
+
+#endif //IOCTRL_H

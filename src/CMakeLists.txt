@@ -60,6 +60,11 @@ set(MACSIM_SRCS
   resource.cc
   mmu.cc
   tlb.cc
+  ioctrl.cc
+  pcie_endpoint.cc
+  pcie_rc.cc
+  cxl_t3.cc
+  packet_info.cc
 )
 
 

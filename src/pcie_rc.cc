@@ -27,57 +27,57 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 /**********************************************************************************************
- * File         : cxl_t3.h
+ * File         : pcie_rc.cc
  * Author       : Joonho
- * Date         : 8/10/2021
- * SVN          : $Id: cxl_t3.h 867 2009-11-05 02:28:12Z kacear $:
- * Description  : CXL type 3 device
+ * Date         : 10/10/2021
+ * SVN          : $Id: pcie_rc.h 867 2009-11-05 02:28:12Z kacear $:
+ * Description  : PCIe root complex
  *********************************************************************************************/
-#include <iostream>
-#include <list>
-#include "cxl_t3.h"
 
-cxlt3_c::cxlt3_c(macsim_c* simBase) 
+#include <iostream>
+#include "pcie_rc.h"
+
+
+pcie_rc_c::pcie_rc_c(macsim_c* simBase) 
   : pcie_ep_c(simBase) {
   m_pending_req = new list<mem_req_s*>();
   m_pushed_req = new list<mem_req_s*>();
   m_done_req = new list<mem_req_s*>();
 }
 
-cxlt3_c::~cxlt3_c() {
+pcie_rc_c::~pcie_rc_c() {
   delete m_pending_req;
   delete m_pushed_req;
   delete m_done_req;
 }
 
-void cxlt3_c::run_a_cycle(bool pll_locked) {
+void pcie_rc_c::run_a_cycle(bool pll_locked) {
   if (pll_locked) {
     m_cycle++;
     return;
   }
 
-  // send response
+  // receive requests
+  end_transaction();
+  process_rxlogic();
+  process_rxphys();
+
+  // send requests
   process_txphys();
   process_txlogic();
   start_transaction();
 
-  // process memory requests
-  process_pending_req();
-
-  // receive memory request
-  end_transaction(); 
-  process_rxlogic();
-  process_rxphys();
-
   m_cycle++;
 }
 
-void cxlt3_c::start_transaction() {
+void pcie_rc_c::start_transaction() {
   vector<mem_req_s*> tmp_list;
 
-  for (auto iter = m_done_req->begin(); iter != m_done_req->end(); ++iter) {
+  for (auto iter = m_pending_req->begin(); iter != m_pending_req->end(); 
+      ++iter) {
     mem_req_s* req = *iter;
-    if (push_txvc(req)) {
+    if(push_txvc(req)) {
+      m_pushed_req->push_back(req);
       tmp_list.push_back(req);
     } else {
       break;
@@ -85,39 +85,43 @@ void cxlt3_c::start_transaction() {
   }
 
   for (auto iter = tmp_list.begin(), end = tmp_list.end(); iter != end; ++iter) {
-    m_done_req->remove(*iter);
+    m_pending_req->remove(*iter);
   }
 }
 
-void cxlt3_c::end_transaction() {
+void pcie_rc_c::end_transaction() {
+  vector<mem_req_s*> tmp_list;
   while (1) {
     mem_req_s* req = pull_rxvc();
     if (!req) {
       break;
     } else {
-      m_pending_req->push_back(req);
+      m_done_req->push_back(req);
+      tmp_list.push_back(req);
     }
   }
-}
 
-// FIXME
-void cxlt3_c::process_pending_req() {
-  vector<mem_req_s*> tmp_list;
-
-  for (auto iter = m_pending_req->begin(); iter != m_pending_req->end();
-      iter++) {
-    mem_req_s* req = *iter;
-    m_done_req->push_back(req);
-    tmp_list.push_back(req);
-  }
-
-  for (auto iter = tmp_list.begin(), end = tmp_list.end(); iter != end; ++iter) {
-    m_pending_req->remove(*iter);
+  for (auto iter = tmp_list.begin(), end = tmp_list.end(); iter != end; iter++) {
+    m_pushed_req->remove(*iter);
   }
 }
 
-void cxlt3_c::print_cxlt3_info() {
-  std::cout << "-------------- CME ------------------" << std::endl;
+void pcie_rc_c::insert_request(mem_req_s* req) {
+  m_pending_req->push_back(req);
+}
+
+mem_req_s* pcie_rc_c::pop_request() {
+  if (m_done_req->empty()) {
+    return NULL;
+  } else {
+    mem_req_s* req = m_done_req->front();
+    m_done_req->pop_front();
+    return req;
+  }
+}
+
+void pcie_rc_c::print_rc_info() {
+  std::cout << "-------------- Root Complex ------------------" << std::endl;
   print_ep_info();
 
   std::cout << "pending q" << ": ";
@@ -134,6 +138,5 @@ void cxlt3_c::print_cxlt3_info() {
   for (auto req : *m_done_req) {
     std::cout << std::hex << req->m_addr << " ; ";
   }
-
   std::cout << std::endl;
 }

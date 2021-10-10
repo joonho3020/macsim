@@ -27,31 +27,66 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 /**********************************************************************************************
- * File         : packet_info.cc
+ * File         : pcie_rc.h
  * Author       : Joonho
- * Date         : 10/08/2021
- * SVN          : $Id: packet_info.h,v 1.5 2008-09-17 21:01:41 kacear Exp $:
- * Description  : PCIe packet information
+ * Date         : 10/10/2021
+ * SVN          : $Id: pcie_rc.h 867 2009-11-05 02:28:12Z kacear $:
+ * Description  : PCIe root complex
  *********************************************************************************************/
 
-#include "packet_info.h"
+#ifndef PCIE_RC_H
+#define PCIE_RC_H
 
-packet_info_s::packet_info_s(macsim_c* simBase) {
-  init();
-  m_simBase = simBase;
-}
+#include <list>
 
-void packet_info_s::init(void) {
-  m_id = 0;
-  m_bytes = 0;
-  m_phys_start = 0;
-  m_phys_end = 0;
-  m_done = false;
-  m_vc_id = -1;
-  m_credits = -1;
-  // m_pkt_src = -1;
-  // m_pkt_dst = -1;
-  m_pkt_type = PKT_NONE;
-  m_pkt_state = PKT_INVAL;
-  m_req = NULL;
-}
+#include "pcie_endpoint.h"
+#include "memreq_info.h"
+
+class pcie_rc_c : public pcie_ep_c 
+{
+public:
+  /**
+   * Constructor
+   */
+  pcie_rc_c(macsim_c* simBase);
+  
+  /**
+   * Destructor
+   */
+  ~pcie_rc_c();
+
+  /**
+   * Tick a cycles
+   */
+  void run_a_cycle(bool pll_lock);
+
+  /**
+   * Insert pcie request into pending queue
+   */
+  void insert_request(mem_req_s* req);
+
+  /**
+   * Pop a finished pcie request
+   */
+  mem_req_s* pop_request();
+
+  void print_rc_info();
+
+private:
+  /**
+   * Start PCIe transaction by inserting requests
+   */
+  void start_transaction() override;
+
+  /**
+   * End PCIe transaction by pulling requests
+   */
+  void end_transaction() override;
+
+private:
+  list<mem_req_s*>* m_pending_req; /**< requests pending */
+  list<mem_req_s*>* m_pushed_req;  /**< requests being processed */
+  list<mem_req_s*>* m_done_req;    /**< requests finished */
+};
+
+#endif // PCIE_RC_H

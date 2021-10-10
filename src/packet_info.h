@@ -87,6 +87,7 @@ typedef struct packet_info_s {
   Counter m_phys_end;  /**< physical layer end cycle */
   bool m_done; /**< packet transfer done */
   int m_vc_id; /**< VC id */
+  int m_credits; /**< credits for flow ctrl */
   // int m_pkt_src; /**< packet source endpoint */
   // int m_pkt_dst; /**< packet destination endpoint */
   Pkt_Type m_pkt_type; /**< packet type */

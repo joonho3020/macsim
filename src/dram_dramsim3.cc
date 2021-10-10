@@ -42,6 +42,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "debug_macros.h"
 #include "bug_detector.h"
 #include "memory.h"
+#include "ioctrl.h"
+#include "pcie_rc.h"
 
 #include "all_knobs.h"
 #include "statistics.h"
@@ -273,29 +275,34 @@ bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
 }
 
 void dram_dramsim3_c::cme_schedule() {
+  pcie_rc_c* rc = m_simBase->m_ioctrl->m_rc;
   vector<cme_entry_s*> tmp_list;
 
+  // incoming CME requests
   for (auto I = m_cmein_buffer->begin(), E = m_cmein_buffer->end(); I != E; 
       ++I) {
-    Counter start_cycle = (*I)->m_start_req;
-    Counter cycles = m_simBase->m_core_cycle[0] - start_cycle;
-
-    if (cycles < *KNOB(KNOB_CME_LATENCY)) {
-      (*I)->m_cycles++;
-    } else {
-      tmp_list.push_back((*I));
-    }
+    mem_req_s* req = (*I)->m_req;
+    rc->insert_request(req);
+    m_cmepend_buffer->push_back(req);
+    tmp_list.push_back(*I);
   }
 
   for (auto I = tmp_list.begin(), E = tmp_list.end(); I != E; ++I) {
-    mem_req_s *req = (*I)->m_req;
-
-    m_cmeout_buffer->push_back(req);
+    m_cmein_buffer->remove((*I));
+    STAT_EVENT(TOTAL_DRAM_MERGE);
     (*I)->reset();
     m_cme_free_list->push_back((*I));
-    m_cmein_buffer->remove((*I));
+  }
 
-    STAT_EVENT(TOTAL_DRAM_MERGE);
+  // returned CME requests
+  while (1) {
+    mem_req_s* req = rc->pop_request();
+    if (!req) {
+      break;
+    }
+
+    m_cmeout_buffer->push_back(req);
+    m_cmepend_buffer->remove(req);
   }
 }
 

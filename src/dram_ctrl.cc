@@ -152,24 +152,6 @@ void drb_entry_s::set(mem_req_s* mem_req, uint64_t bid, uint64_t rid,
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-cme_entry_s::cme_entry_s(macsim_c *simBase) {
-  reset();
-  m_simBase = simBase;
-}
-
-void cme_entry_s::set(mem_req_s* req, Counter cur_tick) {
-  m_req = req;
-  m_start_req = cur_tick;
-  m_cycles = 0;
-}
-
-void cme_entry_s::reset() {
-  m_req = NULL;
-  m_cycles = -1;
-  m_start_req = -1;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////
 // dram controller
 
 // dram controller constructor

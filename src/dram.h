@@ -112,10 +112,11 @@ protected:
   int m_id; /**< MC id */
 
   // Joonho : for CXL memory expander
-  set<Addr> m_accessed_addr; /** for debugging */
-  list<cme_entry_s*>* m_cme_free_list;
-  list<cme_entry_s*>* m_cmein_buffer;
-  list<mem_req_s*>* m_cmeout_buffer;
+  set<Addr> m_accessed_addr; /**< for debugging */
+  list<cme_entry_s*>* m_cme_free_list; /**< cme free list */
+  list<cme_entry_s*>* m_cmein_buffer; /**< incoming cme requests */
+  list<mem_req_s*>* m_cmepend_buffer; /**< serving cme requests */
+  list<mem_req_s*>* m_cmeout_buffer; /**< cme done requests */
 };
 
 // wrapper function to allocate a dram scheduler

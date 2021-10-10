@@ -66,6 +66,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "dram.h"
 #include "dyfr.h"
 #include "mmu.h"
+#include "ioctrl.h"
 
 #include "all_knobs.h"
 #include "all_stats.h"
@@ -536,6 +537,14 @@ void macsim_c::init_network(void) {
 }
 
 // =======================================
+// initialize IO
+// =======================================
+void macsim_c::init_io(void) {
+  m_ioctrl = new ioctrl_c();
+  m_ioctrl->initialize(m_simBase);
+}
+
+// =======================================
 // initialize simulation
 // =======================================
 void macsim_c::init_sim(void) {
@@ -764,6 +773,9 @@ void macsim_c::initialize(int argc, char** argv) {
   m_MMU = make_unique<MMU>();
   m_MMU->initialize(m_simBase);
 
+  // initialize IO
+  init_io();
+
   // open traces
   string trace_name_list = static_cast<string>(*KNOB(KNOB_TRACE_NAME_FILE));
   open_traces(trace_name_list);
@@ -773,7 +785,7 @@ void macsim_c::initialize(int argc, char** argv) {
 }
 
 // =======================================
-// To maintain different clock frequency for CPU, GPU, NOC, LLC, MC
+// To maintain different clock frequency for CPU, GPU, NOC, LLC, MC, IO
 // =======================================
 void macsim_c::init_clock_domain(void) {
   CLOCK_CPU = 0;
@@ -781,19 +793,21 @@ void macsim_c::init_clock_domain(void) {
   CLOCK_LLC = m_num_sim_cores;
   CLOCK_NOC = m_num_sim_cores + 1;
   CLOCK_MC = m_num_sim_cores + 2;
+  CLOCK_IO = m_num_sim_cores + 3;
 
   m_clock_internal = 0;
-  float domain_f[5];
+  float domain_f[6];
   domain_f[0] = *KNOB(KNOB_CLOCK_CPU);
   domain_f[1] = *KNOB(KNOB_CLOCK_GPU);
   domain_f[2] = *KNOB(KNOB_CLOCK_LLC);
   domain_f[3] = *KNOB(KNOB_CLOCK_NOC);
   domain_f[4] = *KNOB(KNOB_CLOCK_MC);
+  domain_f[5] = *KNOB(KNOB_CLOCK_IO);
 
   // allow only .x format
   for (int ii = 0; ii < 1; ++ii) {
     bool found = false;
-    for (int jj = 0; jj < 5; ++jj) {
+    for (int jj = 0; jj < 6; ++jj) {
       int int_cast = static_cast<int>(domain_f[jj]);
       float float_cast = static_cast<float>(int_cast);
       if (domain_f[jj] != float_cast) {
@@ -803,7 +817,7 @@ void macsim_c::init_clock_domain(void) {
     }
 
     if (found) {
-      for (int jj = 0; jj < 5; ++jj) {
+      for (int jj = 0; jj < 6; ++jj) {
         domain_f[jj] *= 10;
       }
     } else {
@@ -811,9 +825,9 @@ void macsim_c::init_clock_domain(void) {
     }
   }
 
-  m_domain_freq = new int[3 + m_num_sim_cores];
-  m_domain_count = new int[3 + m_num_sim_cores];
-  m_domain_next = new int[3 + m_num_sim_cores];
+  m_domain_freq = new int[4 + m_num_sim_cores];
+  m_domain_count = new int[4 + m_num_sim_cores];
+  m_domain_next = new int[4 + m_num_sim_cores];
 
   // Cores
   for (int ii = 0; ii < m_num_sim_cores; ++ii) {
@@ -829,14 +843,14 @@ void macsim_c::init_clock_domain(void) {
   }
 
   // LLC, NOC, MC
-  for (int ii = 0; ii < 3; ++ii) {
+  for (int ii = 0; ii < 4; ++ii) {
     m_domain_freq[ii + m_num_sim_cores] = static_cast<int>(domain_f[ii + 2]);
     m_domain_count[ii + m_num_sim_cores] = 0;
     m_domain_next[ii + m_num_sim_cores] = 0;
   }
 
   m_clock_lcm = m_domain_freq[0];
-  for (int i = 1; i < 3 + m_num_sim_cores; i++) {
+  for (int i = 1; i < 4 + m_num_sim_cores; i++) {
     m_clock_lcm = lcm(m_clock_lcm, m_domain_freq[i]);
   }
 
@@ -846,6 +860,7 @@ void macsim_c::init_clock_domain(void) {
   report("LLC clock frequency : " << *KNOB(KNOB_CLOCK_LLC) << " GHz");
   report("NOC clock frequency : " << *KNOB(KNOB_CLOCK_NOC) << " GHz");
   report("MC  clock frequency : " << *KNOB(KNOB_CLOCK_MC) << " GHz");
+  report("IO  clock frequency : " << *KNOB(KNOB_CLOCK_IO) << " GHz");
 }
 
 #define GET_NEXT_CYCLE(domain)              \
@@ -896,6 +911,12 @@ int macsim_c::run_a_cycle() {
       m_simulation_cycle % dyfr_sample_period == 0) {
     m_dyfr->update();
   }
+
+/* if (m_clock_internal == m_domain_next[CLOCK_IO]) { */
+/* m_ioctrl->run_a_cycle(pll_locked); */
+/* GET_NEXT_CYCLE(CLOCK_IO); */
+/* } */
+  m_ioctrl->run_a_cycle(pll_locked);
 
   // handle page faults
   m_MMU->handle_page_faults();
