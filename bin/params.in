@@ -121,7 +121,7 @@ noc_topology mesh
 noc_dimension 2
 
 # CXL
-cme_enable 0
+cme_enable 1
 cme_addr_min 139637976727552
 cme_latency 300
 

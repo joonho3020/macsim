@@ -912,11 +912,11 @@ int macsim_c::run_a_cycle() {
     m_dyfr->update();
   }
 
-/* if (m_clock_internal == m_domain_next[CLOCK_IO]) { */
+  if (m_clock_internal == m_domain_next[CLOCK_IO]) {
+    m_ioctrl->run_a_cycle(pll_locked);
+    GET_NEXT_CYCLE(CLOCK_IO);
+  }
 /* m_ioctrl->run_a_cycle(pll_locked); */
-/* GET_NEXT_CYCLE(CLOCK_IO); */
-/* } */
-  m_ioctrl->run_a_cycle(pll_locked);
 
   // handle page faults
   m_MMU->handle_page_faults();
