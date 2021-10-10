@@ -90,4 +90,5 @@ make install
 
 ## TODOs
 - Interleaving policy btw DIMM & CME
-- Model BW & PCIE latency of CME
+- Model PCIe flow control & ack, nack protocols
+- Add DRAMSim3 to cxlt3_c
