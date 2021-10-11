@@ -68,6 +68,11 @@ public:
    */
   void run_a_cycle(bool pll_locked);
 
+  /*
+   * Tick a internal cycle as CME has a faster internal clock frequency
+   */
+  void run_a_cycle_internal(bool pll_locked);
+
   /**
    * Print for debugging
    */
@@ -104,7 +109,9 @@ private:
   list<mem_req_s*>* m_pushed_req; /**< mem reqs pushed to dramsim */
   list<mem_req_s*>* m_done_req; /**< mem reqs returned from dramsim */
   list<mem_req_s*>* m_tmp_done_req; /**< mem reqs with additional latency */
-  dramsim3::MemorySystem* m_dramsim;
+  dramsim3::MemorySystem* m_dramsim; /**< DRAMSim3 */
+
+  Counter m_cycle_internal; /**< internal cycle for DRAM */
 };
 
 #endif //DRAMSIM3

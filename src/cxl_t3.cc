@@ -48,15 +48,18 @@ using namespace dramsim3;
 
 cxlt3_c::cxlt3_c(macsim_c* simBase) 
   : pcie_ep_c(simBase) {
+  // init queues
   m_pending_req = new list<mem_req_s*>();
   m_pushed_req = new list<mem_req_s*>();
   m_done_req = new list<mem_req_s*>();
   m_tmp_done_req = new list<mem_req_s*>();
 
+  // dramsim init
   std::string config_file = *KNOB(KNOB_CME_DRAMSIM3_CONFIG);
   std::string working_dir = *KNOB(KNOB_CME_DRAMSIM3_OUT);
   m_dramsim = new MemorySystem(config_file, working_dir, NULL, NULL);
 
+  // callback functions for dramsim
   std::function<void(uint64_t)> read_cb;
   std::function<void(uint64_t)> write_cb;
   read_cb = 
@@ -64,6 +67,9 @@ cxlt3_c::cxlt3_c(macsim_c* simBase)
   write_cb = 
     std::bind(&cxlt3_c::write_callback, this, 0, std::placeholders::_1);
   m_dramsim->RegisterCallbacks(read_cb, write_cb);
+
+  // init others
+  m_cycle_internal = 0;
 }
 
 cxlt3_c::~cxlt3_c() {
@@ -86,7 +92,7 @@ void cxlt3_c::run_a_cycle(bool pll_locked) {
   start_transaction();
 
   // process memory requests
-  m_dramsim->ClockTick();
+/* m_dramsim->ClockTick(); */
   process_pending_req();
 
   // receive memory request
@@ -95,6 +101,15 @@ void cxlt3_c::run_a_cycle(bool pll_locked) {
   process_rxphys();
 
   m_cycle++;
+}
+
+void cxlt3_c::run_a_cycle_internal(bool pll_locked) {
+  if (pll_locked) {
+    m_cycle_internal++;
+    return;
+  }
+  m_dramsim->ClockTick();
+  m_cycle_internal++;
 }
 
 void cxlt3_c::start_transaction() {

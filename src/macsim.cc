@@ -67,6 +67,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "dyfr.h"
 #include "mmu.h"
 #include "ioctrl.h"
+#include "cxl_t3.h"
 
 #include "all_knobs.h"
 #include "all_stats.h"
@@ -912,11 +913,16 @@ int macsim_c::run_a_cycle() {
     m_dyfr->update();
   }
 
+  // run IO hierarchy
   if (m_clock_internal == m_domain_next[CLOCK_IO]) {
     m_ioctrl->run_a_cycle(pll_locked);
     GET_NEXT_CYCLE(CLOCK_IO);
   }
-/* m_ioctrl->run_a_cycle(pll_locked); */
+
+  // run dram inside cxl memory expander
+  if (m_clock_internal == m_domain_next[CLOCK_MC]) {
+    m_ioctrl->m_cme->run_a_cycle_internal(pll_locked);
+  }
 
   // handle page faults
   m_MMU->handle_page_faults();
