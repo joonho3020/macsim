@@ -152,6 +152,7 @@ debug_trace_read 0
 debug_sim_thread_schedule 0
 debug_cache_lib 0
 debug_bp_dir 0
+debug_io_sys 0
 
 
 # OUTPUT Redirect

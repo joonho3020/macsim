@@ -54,3 +54,4 @@ param<DEBUG_NOC,                 debug_noc,                 bool,            fal
 param<DEBUG_HMC,                 debug_hmc,                 bool,            false>
 param<DEBUG_MMU,                 debug_mmu,                 bool,            false>
 param<DEBUG_TLB,                 debug_tlb,                 bool,            false>
+param<DEBUG_IO_SYS,              debug_io_sys,              bool,            false>

@@ -45,7 +45,7 @@ public:
   /**
    * Constructor
    */
-  ioctrl_c();
+  ioctrl_c(macsim_c* simBase);
   
   /**
    * Destructor
@@ -55,7 +55,7 @@ public:
   /**
    * Initialized
    */
-  void initialize(macsim_c* simBase);
+  void initialize();
 
   /**
    * Tick a cycle
@@ -65,6 +65,8 @@ public:
 public:
   pcie_rc_c* m_rc;
   cxlt3_c* m_cme;
+  macsim_c* m_simBase;
+  Counter m_cycle;
 
 private:
   pool_c<packet_info_s>* m_pkt_pool;

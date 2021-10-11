@@ -39,12 +39,19 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "cxl_t3.h"
 #include "packet_info.h"
 #include "utils.h"
+#include "all_knobs.h"
 
-#define DEBUG 0
+ioctrl_c::ioctrl_c(macsim_c* simBase) {
+  // simulation related
+  m_simBase = simBase;
+  m_cycle = 0;
 
-
-ioctrl_c::ioctrl_c() {
+  // memory pool for packets
   m_pkt_pool = new pool_c<packet_info_s>;
+
+  // io devices
+  m_rc = new pcie_rc_c(simBase);
+  m_cme = new cxlt3_c(simBase);
 }
 
 ioctrl_c::~ioctrl_c() {
@@ -53,10 +60,7 @@ ioctrl_c::~ioctrl_c() {
   delete m_pkt_pool;
 }
 
-void ioctrl_c::initialize(macsim_c* simBase) {
-  m_rc = new pcie_rc_c(simBase);
-  m_cme = new cxlt3_c(simBase);
-
+void ioctrl_c::initialize() {
   m_rc->init(0, m_pkt_pool, m_cme);
   m_cme->init(1, m_pkt_pool, m_rc);
 }
@@ -65,9 +69,8 @@ void ioctrl_c::run_a_cycle(bool pll_locked) {
   m_cme->run_a_cycle(pll_locked);
   m_rc->run_a_cycle(pll_locked);
 
-#if DEBUG
-  m_cme->print_cxlt3_info();
-  m_rc->print_rc_info();
-#endif 
+  if (*KNOB(KNOB_DEBUG_IO_SYS)) {
+    m_cme->print_cxlt3_info();
+    m_rc->print_rc_info();
+  }
 }
-

@@ -40,6 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifdef DRAMSIM3
 #include <list>
 
+#include "macsim.h"
 #include "dram.h"
 #include "memreq_info.h"
 #include "pcie_endpoint.h"
@@ -88,10 +89,22 @@ private:
    */
   void process_pending_req();
 
+  /**
+   * DRAMSim3 read callback function
+   */
+  void read_callback(unsigned, uint64_t);
+
+  /**
+   * DRAMSim3 write callback function
+   */
+  void write_callback(unsigned, uint64_t);
+
 private:
-  list<mem_req_s*>* m_pending_req;
-  list<mem_req_s*>* m_pushed_req;
-  list<mem_req_s*>* m_done_req;
+  list<mem_req_s*>* m_pending_req; /**< mem reqs pending */
+  list<mem_req_s*>* m_pushed_req; /**< mem reqs pushed to dramsim */
+  list<mem_req_s*>* m_done_req; /**< mem reqs returned from dramsim */
+  list<mem_req_s*>* m_tmp_done_req; /**< mem reqs with additional latency */
+  dramsim3::MemorySystem* m_dramsim;
 };
 
 #endif //DRAMSIM3

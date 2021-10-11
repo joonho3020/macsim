@@ -540,8 +540,8 @@ void macsim_c::init_network(void) {
 // initialize IO
 // =======================================
 void macsim_c::init_io(void) {
-  m_ioctrl = new ioctrl_c();
-  m_ioctrl->initialize(m_simBase);
+  m_ioctrl = new ioctrl_c(m_simBase);
+  m_ioctrl->initialize();
 }
 
 // =======================================
@@ -1039,7 +1039,7 @@ int macsim_c::run_a_cycle() {
 
   if (++m_clock_internal == m_clock_lcm) {
     m_clock_internal = 0;
-    for (int ii = 0; ii < 3 + m_num_sim_cores; ++ii) {
+    for (int ii = 0; ii < 4 + m_num_sim_cores; ++ii) {
       m_domain_count[ii] = 0;
       m_domain_next[ii] = 0;
     }
