@@ -95,4 +95,6 @@ void mem_req_s::init(void) {
   m_msg_dst = 0;
   m_done_func = NULL;
   m_bypass = 0;
+  m_noc_cycle = 0;
+  m_insert_cycle = 0;
 }

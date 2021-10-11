@@ -131,6 +131,8 @@ pcie_per_lane_bw 0.25
 pcie_vc_cnt 1
 pcie_vc_capacity 4096
 pcie_phys_capacity 4
+pcie_txlogic_latency 15
+pcie_rxlogic_latency 15
 
 # ETC
 bug_detector_enable 1
@@ -156,4 +158,4 @@ debug_io_sys 0
 
 
 # OUTPUT Redirect
-out ../../macsim-stats
+out ../../stats-macsim

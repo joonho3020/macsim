@@ -122,6 +122,11 @@ void dram_dramsim3_c::read_callback(unsigned id, uint64_t address) {
       }
       m_pending_request->remove(req);
 
+      STAT_EVENT(AVG_DIMM_LATENCY_BASE);
+      STAT_EVENT_N(AVG_DIMM_LATENCY, m_cycle - req->m_insert_cycle);
+      STAT_EVENT(AVG_DIMM_WR_LATENCY_BASE);
+      STAT_EVENT_N(AVG_DIMM_WR_LATENCY, m_cycle - req->m_insert_cycle);
+
       // return first request with matching address
       // this may not necessarily be true but this is the best we can do
       // at this point
@@ -142,6 +147,11 @@ void dram_dramsim3_c::write_callback(unsigned id, uint64_t address) {
       // in case of WB, retire requests here
       MEMORY->free_req(req->m_core_id, req);
       m_pending_request->remove(req);
+
+      STAT_EVENT(AVG_DIMM_LATENCY_BASE);
+      STAT_EVENT_N(AVG_DIMM_LATENCY, m_cycle - req->m_insert_cycle);
+      STAT_EVENT(AVG_DIMM_WR_LATENCY_BASE);
+      STAT_EVENT_N(AVG_DIMM_WR_LATENCY, m_cycle - req->m_insert_cycle);
 
       // return first request with matching address
       // this may not necessarily be true but this is the best we can do
@@ -245,17 +255,17 @@ bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
   Addr addr = mem_req->m_addr;
   bool is_write = (mem_req->m_type == MRT_WB);
 
+  // FIXME : Don't need to use cme_entry_s, change this to mem_req_s
+
   // insert to CME
   if (addr >= *KNOB(KNOB_CME_RANGE) && *KNOB(KNOB_CME_ENABLE)) {
     if (m_cme_free_list->empty()) {
       return false;
     } else {
       cme_entry_s* new_entry = m_cme_free_list->front();
-      m_cme_free_list->pop_front();
-
       new_entry->set(mem_req, m_simBase->m_core_cycle[0]);
       m_cmein_buffer->push_back(new_entry);
-      mem_req->m_state = CME_NOC_START;
+      m_cme_free_list->pop_front();
       return true;
     }
   }
@@ -267,6 +277,7 @@ bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
     if (will_accept) {
       m_dramsim->AddTransaction(addr_, is_write);
       m_pending_request->push_back(mem_req);
+      mem_req->m_insert_cycle = m_cycle;
       return true;
     } else {
       return false;
@@ -275,20 +286,22 @@ bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
 }
 
 void dram_dramsim3_c::cme_schedule() {
-  pcie_rc_c* rc = m_simBase->m_ioctrl->m_rc;
+  pcie_rc_c* root_complex = m_simBase->m_ioctrl->m_rc;
   vector<cme_entry_s*> tmp_list;
 
   // incoming CME requests
   for (auto I = m_cmein_buffer->begin(), E = m_cmein_buffer->end(); I != E; 
       ++I) {
     mem_req_s* req = (*I)->m_req;
-    rc->insert_request(req);
+    root_complex->insert_request(req);
     m_cmepend_buffer->push_back(req);
     tmp_list.push_back(*I);
+
+    req->m_insert_cycle = m_cycle;
   }
 
   for (auto I = tmp_list.begin(), E = tmp_list.end(); I != E; ++I) {
-    m_cmein_buffer->remove((*I));
+      m_cmein_buffer->remove((*I));
     STAT_EVENT(TOTAL_DRAM_MERGE);
     (*I)->reset();
     m_cme_free_list->push_back((*I));
@@ -296,13 +309,23 @@ void dram_dramsim3_c::cme_schedule() {
 
   // returned CME requests
   while (1) {
-    mem_req_s* req = rc->pop_request();
+    mem_req_s* req = root_complex->pop_request();
     if (!req) {
       break;
     }
 
     m_cmeout_buffer->push_back(req);
     m_cmepend_buffer->remove(req);
+
+    STAT_EVENT(AVG_CME_LATENCY_BASE);
+    STAT_EVENT_N(AVG_CME_LATENCY, m_cycle - req->m_insert_cycle);
+    if (req->m_type == MRT_WB) {
+      STAT_EVENT(AVG_CME_RD_LATENCY_BASE);
+      STAT_EVENT_N(AVG_CME_RD_LATENCY, m_cycle - req->m_insert_cycle);
+    } else {
+      STAT_EVENT(AVG_CME_WR_LATENCY_BASE);
+      STAT_EVENT_N(AVG_CME_WR_LATENCY, m_cycle - req->m_insert_cycle);
+    }
   }
 }
 
