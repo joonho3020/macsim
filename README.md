@@ -91,4 +91,5 @@ make install
 ## TODOs
 - Interleaving policy btw DIMM & CME
 - Model PCIe flow control & ack, nack protocols
-- Add DRAMSim3 to cxlt3_c
+- Add stats
+- Check timing of cxl memory expander
