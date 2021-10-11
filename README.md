@@ -90,6 +90,4 @@ make install
 
 ## TODOs
 - Interleaving policy btw DIMM & CME
-- Model PCIe flow control & ack, nack protocols
-- Add stats
-- Check timing of cxl memory expander
+- Model PCIe flow control & ack, nack protocols (?)
