@@ -43,4 +43,5 @@ param<PCIE_PER_LANE_BW, pcie_per_lane_bw, float, 0.25>
 param<PCIE_VC_CNT, pcie_vc_cnt, int, 4>
 param<PCIE_VC_CAPACITY, pcie_vc_capacity, int, 4096>
 param<PCIE_PHYS_CAPACITY, pcie_phys_capacity, int, 8>
-
+param<PCIE_TXLOGIC_LATENCY, pcie_txlogic_latency, uint64_t, 10>
+param<PCIE_RXLOGIC_LATENCY, pcie_rxlogic_latency, uint64_t, 10>

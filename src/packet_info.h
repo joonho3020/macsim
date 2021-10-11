@@ -83,8 +83,9 @@ typedef struct packet_info_s {
 
   int m_id; /**< unique request id */
   int m_bytes; /**< bytes of a packet */
+  Counter m_logic_end; /**< logic layer end cycle */
   Counter m_phys_start; /**< physical layer start cycle */
-  Counter m_phys_end;  /**< physical layer end cycle */
+  Counter m_rxlogic_finished;  /**< rxlogic finished cycle */
   bool m_done; /**< packet transfer done */
   int m_vc_id; /**< VC id */
   int m_credits; /**< credits for flow ctrl */

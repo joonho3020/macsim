@@ -127,10 +127,16 @@ bool pcie_ep_c::insert_rxphys(packet_info_s* pkt) {
   }
 }
 
+// virtual class
+// should call push_txvc internally
+// look at pcie_rc_c, cxl_t3_c for examples
 void pcie_ep_c::start_transaction() {
   return;
 }
 
+// virtual class
+// should call pull_rxvc internally
+// look at pcie_rc_c, cxl_t3_c for examples
 void pcie_ep_c::end_transaction() {
   return;
 }
@@ -154,6 +160,7 @@ void pcie_ep_c::process_txlogic() {
       } else {
         if (!phys_layer_full(is_tx)) {
           decrease_credit(pkt);
+          pkt->m_logic_end = m_cycle + *KNOB(KNOB_PCIE_TXLOGIC_LATENCY);
           pull_vc_buffer(pkt->m_vc_id, m_txvc_size, m_txvc_buff);
           insert_tx_phys(pkt, false);  // insert to back
           break;
@@ -171,15 +178,25 @@ void pcie_ep_c::process_txphys() {
 
   packet_info_s* pkt = m_txphys_q->front();
 
-  // insert the packet to peer's receive phys q
-  if (m_peer_ep->insert_rxphys(pkt)) {
-    m_txphys_q->pop_front();
+  if (pkt->m_logic_end > m_cycle) {
+    return;
+  } else {
+    // insert the packet to peer's receive phys q
+    if (m_peer_ep->insert_rxphys(pkt)) {
+      m_txphys_q->pop_front();
 
-    // packets are sent serially
-    Counter lat = get_phys_latency(pkt);
-    pkt->m_phys_start = m_prev_txphys_cycle;
-    pkt->m_phys_end = m_prev_txphys_cycle + lat;
-    m_prev_txphys_cycle = pkt->m_phys_end;
+      // - packets are sent serially so transmission starts only after
+      //   the previsou packet finished physical layer transmission
+      Counter lat = get_phys_latency(pkt);
+      pkt->m_phys_start = m_prev_txphys_cycle;
+      Counter phys_finished = m_prev_txphys_cycle + lat;
+      m_prev_txphys_cycle = phys_finished;
+
+      // - instead of modeling the rx logic layer latency separately,
+      //   just add the latency here and skip process_rxlogic
+      pkt->m_rxlogic_finished = phys_finished + 
+        *KNOB(KNOB_PCIE_RXLOGIC_LATENCY);
+    }
   }
 }
 
@@ -187,8 +204,8 @@ void pcie_ep_c::process_rxphys() {
   while (m_rxphys_q->size()) {
     packet_info_s* pkt = m_rxphys_q->front();
 
-    // finished physical layer
-    if (pkt->m_phys_end <= m_cycle) {
+    // finished physical layer & rx logic layer
+    if (pkt->m_rxlogic_finished <= m_cycle) {
       assert(m_rxvc_size[pkt->m_vc_id] >= pkt->m_bytes);
       m_rxphys_q->pop_front();
       insert_vc_buff(pkt->m_vc_id, m_rxvc_size, m_rxvc_buff, pkt);
@@ -199,7 +216,7 @@ void pcie_ep_c::process_rxphys() {
 }
 
 void pcie_ep_c::process_rxlogic() {
-  // TODO
+  // skip since the latency is considered in process_txphys
 }
 
 Counter pcie_ep_c::get_phys_latency(packet_info_s* pkt) {

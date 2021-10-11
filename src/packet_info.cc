@@ -44,8 +44,9 @@ packet_info_s::packet_info_s(macsim_c* simBase) {
 void packet_info_s::init(void) {
   m_id = 0;
   m_bytes = 0;
+  m_logic_end = 0;
   m_phys_start = 0;
-  m_phys_end = 0;
+  m_rxlogic_finished = 0;
   m_done = false;
   m_vc_id = -1;
   m_credits = -1;
