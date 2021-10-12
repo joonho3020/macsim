@@ -122,10 +122,10 @@ void dram_dramsim3_c::read_callback(unsigned id, uint64_t address) {
       }
       m_pending_request->remove(req);
 
-      STAT_EVENT(AVG_DIMM_LATENCY_BASE);
-      STAT_EVENT_N(AVG_DIMM_LATENCY, m_cycle - req->m_insert_cycle);
-      STAT_EVENT(AVG_DIMM_RD_LATENCY_BASE);
-      STAT_EVENT_N(AVG_DIMM_RD_LATENCY, m_cycle - req->m_insert_cycle);
+      STAT_EVENT(AVG_DIMM_TURN_LATENCY_BASE);
+      STAT_EVENT_N(AVG_DIMM_TURN_LATENCY, m_cycle - req->m_insert_cycle);
+      STAT_EVENT(AVG_DIMM_RD_TURN_LATENCY_BASE);
+      STAT_EVENT_N(AVG_DIMM_RD_TURN_LATENCY, m_cycle - req->m_insert_cycle);
 
       // return first request with matching address
       // this may not necessarily be true but this is the best we can do
@@ -148,10 +148,10 @@ void dram_dramsim3_c::write_callback(unsigned id, uint64_t address) {
       MEMORY->free_req(req->m_core_id, req);
       m_pending_request->remove(req);
 
-      STAT_EVENT(AVG_DIMM_LATENCY_BASE);
-      STAT_EVENT_N(AVG_DIMM_LATENCY, m_cycle - req->m_insert_cycle);
-      STAT_EVENT(AVG_DIMM_WR_LATENCY_BASE);
-      STAT_EVENT_N(AVG_DIMM_WR_LATENCY, m_cycle - req->m_insert_cycle);
+      STAT_EVENT(AVG_DIMM_TURN_LATENCY_BASE);
+      STAT_EVENT_N(AVG_DIMM_TURN_LATENCY, m_cycle - req->m_insert_cycle);
+      STAT_EVENT(AVG_DIMM_WR_TURN_LATENCY_BASE);
+      STAT_EVENT_N(AVG_DIMM_WR_TURN_LATENCY, m_cycle - req->m_insert_cycle);
 
       // return first request with matching address
       // this may not necessarily be true but this is the best we can do
@@ -204,6 +204,8 @@ void dram_dramsim3_c::send(void) {
        ++I) {
     mem_req_s* req = (*I);
     req->m_msg_type = NOC_FILL;
+    req->m_noc_cycle = m_cycle;
+
     bool insert_packet =
       NETWORK->send(req, MEM_MC, m_id, MEM_LLC, req->m_cache_id[MEM_LLC]);
 
@@ -229,6 +231,7 @@ void dram_dramsim3_c::send(void) {
     mem_req_s* req = (*I);
     req->m_state = CME_NOC_DONE;
     req->m_msg_type = NOC_FILL;
+    req->m_noc_cycle = m_cycle;
 
     bool insert_packet = 
       NETWORK->send(req, MEM_MC, m_id, MEM_LLC, req->m_cache_id[MEM_LLC]);
@@ -266,6 +269,8 @@ bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
       new_entry->set(mem_req, m_simBase->m_core_cycle[0]);
       m_cmein_buffer->push_back(new_entry);
       m_cme_free_list->pop_front();
+
+      mem_req->m_cmereq = true;
       return true;
     }
   }
@@ -278,6 +283,7 @@ bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
       m_dramsim->AddTransaction(addr_, is_write);
       m_pending_request->push_back(mem_req);
       mem_req->m_insert_cycle = m_cycle;
+      mem_req->m_cmereq = false;
       return true;
     } else {
       return false;
@@ -317,14 +323,14 @@ void dram_dramsim3_c::cme_schedule() {
     m_cmeout_buffer->push_back(req);
     m_cmepend_buffer->remove(req);
 
-    STAT_EVENT(AVG_CME_LATENCY_BASE);
-    STAT_EVENT_N(AVG_CME_LATENCY, m_cycle - req->m_insert_cycle);
+    STAT_EVENT(AVG_CME_TURN_LATENCY_BASE);
+    STAT_EVENT_N(AVG_CME_TURN_LATENCY, m_cycle - req->m_insert_cycle);
     if (req->m_type == MRT_WB) {
-      STAT_EVENT(AVG_CME_WR_LATENCY_BASE);
-      STAT_EVENT_N(AVG_CME_WR_LATENCY, m_cycle - req->m_insert_cycle);
+      STAT_EVENT(AVG_CME_WR_TURN_LATENCY_BASE);
+      STAT_EVENT_N(AVG_CME_WR_TURN_LATENCY, m_cycle - req->m_insert_cycle);
     } else {
-      STAT_EVENT(AVG_CME_RD_LATENCY_BASE);
-      STAT_EVENT_N(AVG_CME_RD_LATENCY, m_cycle - req->m_insert_cycle);
+      STAT_EVENT(AVG_CME_RD_TURN_LATENCY_BASE);
+      STAT_EVENT_N(AVG_CME_RD_TURN_LATENCY, m_cycle - req->m_insert_cycle);
     }
   }
 }

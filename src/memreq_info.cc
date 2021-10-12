@@ -99,4 +99,5 @@ void mem_req_s::init(void) {
   m_bypass = 0;
   m_noc_cycle = 0;
   m_insert_cycle = 0;
+  m_cmereq = false;
 }
