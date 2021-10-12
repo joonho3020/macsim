@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************************************/
 #include <cassert>
 #include <iostream>
+#include <algorithm>
 
 #include "pcie_endpoint.h"
 

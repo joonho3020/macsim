@@ -183,7 +183,6 @@ private:
   int m_lanes; /**< PCIe lanes connected to endpoint */
   float m_perlane_bw; /**< PCIe per lane BW in GB (cycles to send 1B) */
   Counter m_prev_txphys_cycle; /**< finish cycle of previously sent packet */
-  pcie_ep_c* m_peer_ep; /**< endpoint connected to this endpoint */
 
   int m_vc_cnt; /**< VC number */
   int m_vc_cap; /**< VC buffer capacity */
@@ -202,6 +201,7 @@ private:
   deque<packet_info_s*>* m_rxphys_q; /**< physical layer receive queue */
 
 protected:
+  pcie_ep_c* m_peer_ep; /**< endpoint connected to this endpoint */
   macsim_c* m_simBase; /**< simulation base */
   Counter m_cycle; /**< PCIe clock cycle */
 };

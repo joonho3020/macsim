@@ -71,6 +71,11 @@ public:
   mem_req_s* pop_request();
 
   /**
+   * Pop a pushed pcie request
+   */
+  void pop_pushedq(mem_req_s* req);
+
+  /**
    * Print for debugging
    */
   void print_rc_info();

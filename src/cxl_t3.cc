@@ -39,6 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <list>
 
 #include "cxl_t3.h"
+#include "pcie_rc.h"
 #include "macsim.h"
 #include "memory.h"
 #include "dramsim3.h"
@@ -206,8 +207,10 @@ void cxlt3_c::write_callback(unsigned id, uint64_t address) {
 
     if (req->m_addr == address) {
       // in case of WB, retire requests here
-      MEMORY->free_req(req->m_core_id, req);
       m_pushed_req->remove(req);
+      pcie_rc_c* rc = static_cast<pcie_rc_c*>(m_peer_ep);
+      rc->pop_pushedq(req);
+      MEMORY->free_req(req->m_core_id, req);
 
       // return first request with matching address
       // this may not necessarily be true but this is the best we can do
