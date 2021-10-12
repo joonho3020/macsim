@@ -5,7 +5,7 @@
 	path = src/rwqueue
 	url = https://github.com/cameron314/readerwriterqueue
 [submodule "src/DRAMSim2"]
-	path = src/DRAMSim2
+	path = src/DRAMsim2
 	url = https://github.com/snu-comparch/DRAMSim2.git
 [submodule "src/DRAMsim3"]
 	path = src/DRAMsim3
