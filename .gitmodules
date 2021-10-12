@@ -6,7 +6,7 @@
 	url = https://github.com/cameron314/readerwriterqueue
 [submodule "src/DRAMSim2"]
 	path = src/DRAMSim2
-	url = https://github.com/joey0320/DRAMSim2.git
+	url = https://github.com/snu-comparch/DRAMSim2.git
 [submodule "src/DRAMsim3"]
 	path = src/DRAMsim3
-	url = https://github.com/joey0320/DRAMsim3.git
+	url = https://github.com/snu-comparch/DRAMsim3.git
