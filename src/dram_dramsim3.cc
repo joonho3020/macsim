@@ -124,8 +124,8 @@ void dram_dramsim3_c::read_callback(unsigned id, uint64_t address) {
 
       STAT_EVENT(AVG_DIMM_LATENCY_BASE);
       STAT_EVENT_N(AVG_DIMM_LATENCY, m_cycle - req->m_insert_cycle);
-      STAT_EVENT(AVG_DIMM_WR_LATENCY_BASE);
-      STAT_EVENT_N(AVG_DIMM_WR_LATENCY, m_cycle - req->m_insert_cycle);
+      STAT_EVENT(AVG_DIMM_RD_LATENCY_BASE);
+      STAT_EVENT_N(AVG_DIMM_RD_LATENCY, m_cycle - req->m_insert_cycle);
 
       // return first request with matching address
       // this may not necessarily be true but this is the best we can do
@@ -320,11 +320,11 @@ void dram_dramsim3_c::cme_schedule() {
     STAT_EVENT(AVG_CME_LATENCY_BASE);
     STAT_EVENT_N(AVG_CME_LATENCY, m_cycle - req->m_insert_cycle);
     if (req->m_type == MRT_WB) {
-      STAT_EVENT(AVG_CME_RD_LATENCY_BASE);
-      STAT_EVENT_N(AVG_CME_RD_LATENCY, m_cycle - req->m_insert_cycle);
-    } else {
       STAT_EVENT(AVG_CME_WR_LATENCY_BASE);
       STAT_EVENT_N(AVG_CME_WR_LATENCY, m_cycle - req->m_insert_cycle);
+    } else {
+      STAT_EVENT(AVG_CME_RD_LATENCY_BASE);
+      STAT_EVENT_N(AVG_CME_RD_LATENCY, m_cycle - req->m_insert_cycle);
     }
   }
 }
