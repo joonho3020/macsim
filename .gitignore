@@ -27,3 +27,4 @@ tags
 .gdb_history
 bin/params.out
 *.out
+build

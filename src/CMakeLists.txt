@@ -72,7 +72,7 @@ set(DRAMSIM3_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/DRAMsim3)
 
 add_custom_target(
   dramsim_lib
-  COMMAND make
+  COMMAND make libdramsim3.a
   WORKING_DIRECTORY ${DRAMSIM3_SRC_DIR}
   )
 
