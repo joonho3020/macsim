@@ -132,8 +132,8 @@ dram_num_banks 16
 dram_num_channel 8
 dram_rowbuffer_size 2048
 dram_scheduling_policy DRAMSIM3
-dramsim3_config ./configs/DDR5_8Gb_x8_1866.ini
-dramsim3_out ../../macsim-stats/dramsim
+dramsim3_config ./DDR5_8Gb_x8_1866.ini
+dramsim3_out ./dramsim-stats
 
 # Network
 noc_topology mesh
@@ -143,6 +143,7 @@ noc_dimension 2
 cme_enable 1
 cme_addr_min 139637976727552
 cme_latency 300
+cme_dramsim3_config ./DDR5_8Gb_x8_1866.ini
 
 pcie_memreq_bytes 64
 pcie_lanes 8
