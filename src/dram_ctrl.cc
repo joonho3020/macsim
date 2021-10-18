@@ -685,8 +685,10 @@ void dram_ctrl_c::receive(void) {
     }
 
     // Joonho : Get address range
-    if (m_accessed_addr.find(req->m_addr) == m_accessed_addr.end()) {
-      m_accessed_addr.insert(req->m_addr);
+    if (*KNOB(KNOB_DEBUG_IO_SYS)) {
+      if (m_accessed_addr.find(req->m_addr) == m_accessed_addr.end()) {
+        m_accessed_addr.insert(req->m_addr);
+      }
     }
   }
 }
