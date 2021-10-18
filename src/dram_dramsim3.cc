@@ -93,11 +93,6 @@ void dram_dramsim3_c::init(int id) {
 }
 
 void dram_dramsim3_c::run_a_cycle(bool pll_lock) {
-  if (pll_lock) {
-    ++m_cycle;
-    return;
-  }
-
   send();
   m_dramsim->ClockTick();
   cme_schedule();
@@ -231,7 +226,7 @@ void dram_dramsim3_c::send(void) {
   for (auto I = m_cmeout_buffer->begin(), E = m_cmeout_buffer->end(); I != E;
       ++I) {
     mem_req_s* req = (*I);
-    req->m_state = CME_NOC_DONE;
+    req->m_state = CME_PCIE_DONE;
     req->m_msg_type = NOC_FILL;
     req->m_noc_cycle = m_cycle;
 

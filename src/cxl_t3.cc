@@ -82,10 +82,6 @@ cxlt3_c::~cxlt3_c() {
 }
 
 void cxlt3_c::run_a_cycle(bool pll_locked) {
-  if (pll_locked) {
-    m_cycle++;
-    return;
-  }
 
   // send response
   process_txphys();

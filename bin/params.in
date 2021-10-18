@@ -150,8 +150,8 @@ pcie_per_lane_bw 0.25
 pcie_vc_cnt 4
 pcie_vc_capacity 1024
 pcie_phys_capacity 8
-pcie_txlogic_latency 20
-pcie_rxlogic_latency 20
+pcie_txlogic_latency 10
+pcie_rxlogic_latency 10
 
 # ETC
 bug_detector_enable 1
@@ -173,7 +173,7 @@ debug_trace_read 0
 debug_sim_thread_schedule 0
 debug_cache_lib 0
 debug_bp_dir 0
-debug_io_sys 0
+debug_io_sys 1
 
 
 # OUTPUT Redirect

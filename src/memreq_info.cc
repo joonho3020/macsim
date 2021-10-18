@@ -62,6 +62,8 @@ const char* mem_req_c::mem_state[MEM_STATE_MAX] = {
   "MEM_NOC_DONE",
   "CME_NOC_START",
   "CME_NOC_DONE",
+  "CME_PCIE_START",
+  "CME_PCIE_DONE"
 };
 
 mem_req_s::mem_req_s(macsim_c* simBase) {
