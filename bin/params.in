@@ -7,7 +7,7 @@ num_sim_large_cores 4
 core_type ptx
 large_core_type x86
 sim_cycle_count 0 
-max_insts 500000000
+max_insts 200000000
 heartbeat_interval 1000000
 forward_progress_limit 50000
 repeat_trace 1
@@ -18,8 +18,8 @@ clock_cpu 2.5
 clock_gpu 1
 clock_llc 1
 clock_noc 1
-clock_mc  0.8
-clock_io 0.8
+clock_mc 1.2
+clock_io 1.6
 
 
 # Common Core Configuration
@@ -132,7 +132,7 @@ dram_num_banks 16
 dram_num_channel 8
 dram_rowbuffer_size 2048
 dram_scheduling_policy DRAMSIM3
-dramsim3_config ./DDR5_8Gb_x8_1866.ini
+dramsim3_config ./DDR4_8Gb_x16_2400.ini
 dramsim3_out ./dramsim-stats
 
 # Network
@@ -142,15 +142,14 @@ noc_dimension 2
 # CXL
 cme_enable 1
 cme_addr_min 139637976727552
-cme_latency 300
-cme_dramsim3_config ./DDR5_8Gb_x8_1866.ini
+cme_dramsim3_config ./DDR4_8Gb_x16_2400.ini
 
 pcie_memreq_bytes 64
 pcie_lanes 8
 pcie_per_lane_bw 0.25
-pcie_vc_cnt 1
-pcie_vc_capacity 4096
-pcie_phys_capacity 4
+pcie_vc_cnt 4
+pcie_vc_capacity 1024
+pcie_phys_capacity 8
 pcie_txlogic_latency 20
 pcie_rxlogic_latency 20
 
