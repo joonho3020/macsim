@@ -114,6 +114,7 @@ mem_req_s* pcie_rc_c::pop_request() {
     return req;
   }
 }
+
 void pcie_rc_c::pop_pushedq(mem_req_s* req) {
   m_pushed_req->remove(req);
 }

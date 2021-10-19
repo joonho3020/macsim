@@ -85,3 +85,8 @@ dram_c::~dram_c() {
   delete m_cmeout_buffer;
   delete m_cme_free_list;
 }
+
+void dram_c::pop_pushedq(mem_req_s *req) {
+  m_cmepend_buffer->remove(req);
+}
+

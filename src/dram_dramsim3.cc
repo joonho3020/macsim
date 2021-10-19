@@ -43,6 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "bug_detector.h"
 #include "memory.h"
 #include "ioctrl.h"
+#include "cxl_t3.h"
 #include "pcie_rc.h"
 
 #include "all_knobs.h"
@@ -93,6 +94,12 @@ void dram_dramsim3_c::init(int id) {
 }
 
 void dram_dramsim3_c::run_a_cycle(bool pll_lock) {
+  if (*KNOB(KNOB_DEBUG_IO_SYS)) {
+    print_q();
+    m_simBase->m_ioctrl->m_cme->print_cxlt3_info();
+    m_simBase->m_ioctrl->m_rc->print_rc_info();
+  }
+
   send();
   m_dramsim->ClockTick();
   cme_schedule();
@@ -160,7 +167,7 @@ void dram_dramsim3_c::receive(void) {
   mem_req_s* req = NETWORK->receive(MEM_MC, m_id);
   if (!req) return;
 
-  if (req && insert_new_req(req)) {
+  if (insert_new_req(req)) {
     NETWORK->receive_pop(MEM_MC, m_id);
     if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
       m_simBase->m_bug_detector->deallocate_noc(req);
@@ -250,12 +257,11 @@ void dram_dramsim3_c::send(void) {
   }
 }
 
-  // TODO : sophisticated interleaving policy is required
+// TODO : sophisticated interleaving policy is required
+// FIXME : Don't need to use cme_entry_s, change this to mem_req_s
 bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
   Addr addr = mem_req->m_addr;
   bool is_write = (mem_req->m_type == MRT_WB);
-
-  // FIXME : Don't need to use cme_entry_s, change this to mem_req_s
 
   // insert to CME
   if (addr >= *KNOB(KNOB_CME_RANGE) && *KNOB(KNOB_CME_ENABLE)) {
@@ -263,7 +269,7 @@ bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
       return false;
     } else {
       cme_entry_s* new_entry = m_cme_free_list->front();
-      new_entry->set(mem_req, m_simBase->m_core_cycle[0]);
+      new_entry->set(mem_req, m_simBase->m_core_cycle[mem_req->m_core_id]);
       m_cmein_buffer->push_back(new_entry);
       m_cme_free_list->pop_front();
 
@@ -274,8 +280,8 @@ bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
   // insert to DIMM
   else {
     uint64_t addr_ = static_cast<uint64_t>(addr);
-
     bool will_accept = m_dramsim->WillAcceptTransaction(addr_, is_write);
+
     if (will_accept) {
       m_dramsim->AddTransaction(addr_, is_write);
       m_pending_request->push_back(mem_req);
@@ -291,6 +297,12 @@ bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
 void dram_dramsim3_c::cme_schedule() {
   pcie_rc_c* root_complex = m_simBase->m_ioctrl->m_rc;
   vector<cme_entry_s*> tmp_list;
+
+  if (!(*KNOB(KNOB_CME_ENABLE))) {
+    assert(m_cmein_buffer->size() == 0);
+    assert(root_complex->pop_request() == NULL);
+    return;
+  }
 
   // incoming CME requests
   for (auto I = m_cmein_buffer->begin(), E = m_cmein_buffer->end(); I != E; 
@@ -330,6 +342,40 @@ void dram_dramsim3_c::cme_schedule() {
       STAT_EVENT_N(AVG_CME_RD_TURN_LATENCY, m_cycle - req->m_insert_cycle);
     }
   }
+}
+
+void dram_dramsim3_c::print_q() {
+  std::cout << "-------------- DRAMSim3 ------------------" << std::endl;
+
+  std::cout << "cme free buffer entries" << ": " << std::dec <<
+    m_cme_free_list->size() << std::endl;
+
+  std::cout << "cme in buffer" << ": ";
+  for (auto req : *m_cmein_buffer) {
+    std::cout << std::hex << req->m_req->m_addr << " ; ";
+  }
+  
+  std::cout << "cme pend buffer" << ": ";
+  for (auto req : *m_cmepend_buffer) {
+    std::cout << std::hex << req->m_addr << " ; ";
+  }
+
+  std::cout << "cme out buffer" << ": ";
+  for (auto req : *m_cmeout_buffer) {
+    std::cout << std::hex << req->m_addr << " ; ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "dimm pend buffer" << ": ";
+  for (auto req : *m_pending_request) {
+    std::cout << std::hex << req->m_addr << " ; ";
+  }
+
+  std::cout << "dimm out buffer" << ": ";
+  for (auto req : *m_output_buffer) {
+    std::cout << std::hex << req->m_addr << " ; ";
+  }
+  std::cout << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

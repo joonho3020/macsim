@@ -43,6 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "macsim.h"
 #include "memory.h"
 #include "dramsim3.h"
+#include "dram_dramsim3.h"
 #include "all_knobs.h"
 
 using namespace dramsim3;
@@ -82,7 +83,6 @@ cxlt3_c::~cxlt3_c() {
 }
 
 void cxlt3_c::run_a_cycle(bool pll_locked) {
-
   // send response
   process_txphys();
   process_txlogic();
@@ -202,10 +202,12 @@ void cxlt3_c::write_callback(unsigned id, uint64_t address) {
     mem_req_s* req = *iter;
 
     if (req->m_addr == address) {
+      pcie_rc_c* rc = static_cast<pcie_rc_c*>(m_peer_ep);
+
       // in case of WB, retire requests here
       m_pushed_req->remove(req);
-      pcie_rc_c* rc = static_cast<pcie_rc_c*>(m_peer_ep);
       rc->pop_pushedq(req);
+      DRAM_CTRL[0]->pop_pushedq(req);
       MEMORY->free_req(req->m_core_id, req);
 
       // return first request with matching address

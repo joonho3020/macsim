@@ -10,3 +10,6 @@
 [submodule "src/DRAMsim3"]
 	path = src/DRAMsim3
 	url = https://github.com/snu-comparch/DRAMsim3.git
+[submodule "src/ramulator"]
+	path = src/ramulator
+	url = https://github.com/snu-comparch/ramulator.git
