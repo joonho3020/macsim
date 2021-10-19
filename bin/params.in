@@ -74,23 +74,23 @@ large_core_schedule ooo
 max_threads_per_large_core 1
 icache_large_num_set 64 # 64 KB
 icache_large_assoc 8
-l1_large_num_set 64 # 32 KB L1 Cache
-l1_large_assoc 8
-l1_large_latency 3
-l1_large_bypass 0
-l2_large_num_set 256 # 128 KB L2 Cache
-l2_large_assoc 8
-l2_large_latency 8
-l2_large_bypass 0
-
-# l1_large_num_set 4 # 32 KB L1 Cache
-# l1_large_assoc 1
+# l1_large_num_set 64 # 32 KB L1 Cache
+# l1_large_assoc 8
 # l1_large_latency 3
 # l1_large_bypass 0
-# l2_large_num_set 8 # 128 KB L2 Cache
-# l2_large_assoc 1
+# l2_large_num_set 256 # 128 KB L2 Cache
+# l2_large_assoc 8
 # l2_large_latency 8
 # l2_large_bypass 0
+
+l1_large_num_set 4 # 32 KB L1 Cache
+l1_large_assoc 1
+l1_large_latency 3
+l1_large_bypass 0
+l2_large_num_set 8 # 128 KB L2 Cache
+l2_large_assoc 1
+l2_large_latency 8
+l2_large_bypass 0
 
 
 # Memory
@@ -104,23 +104,23 @@ infinite_port 0
 
 
 # LLC Cache
-num_llc 4
-llc_num_set 1024
-llc_line_size 64
-llc_assoc 32
-llc_num_bank 8
-llc_latency 30 
-pref_framework_on 1
-enable_pref_small_core 0
-
-# num_llc 1
-# llc_num_set 16
+# num_llc 4
+# llc_num_set 1024
 # llc_line_size 64
-# llc_assoc 2
-# llc_num_bank 2
+# llc_assoc 32
+# llc_num_bank 8
 # llc_latency 30
 # pref_framework_on 1
 # enable_pref_small_core 0
+
+num_llc 1
+llc_num_set 16
+llc_line_size 64
+llc_assoc 2
+llc_num_bank 2
+llc_latency 30
+pref_framework_on 1
+enable_pref_small_core 0
 
 
 # DRAM
