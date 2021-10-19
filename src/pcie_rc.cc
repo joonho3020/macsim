@@ -52,11 +52,6 @@ pcie_rc_c::~pcie_rc_c() {
 }
 
 void pcie_rc_c::run_a_cycle(bool pll_locked) {
-  if (pll_locked) {
-    m_cycle++;
-    return;
-  }
-
   // receive requests
   end_transaction();
   process_rxlogic();

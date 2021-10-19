@@ -101,11 +101,6 @@ void pcie_ep_c::init(int id, pool_c<packet_info_s>* pkt_pool,
 }
 
 void pcie_ep_c::run_a_cycle(bool pll_locked) {
-  if (pll_locked) {
-    m_cycle++;
-    return;
-  }
-
   // receive requests
   end_transaction();
   process_rxlogic();

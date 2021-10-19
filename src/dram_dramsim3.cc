@@ -93,11 +93,6 @@ void dram_dramsim3_c::init(int id) {
 }
 
 void dram_dramsim3_c::run_a_cycle(bool pll_lock) {
-  if (pll_lock) {
-    ++m_cycle;
-    return;
-  }
-
   send();
   m_dramsim->ClockTick();
   cme_schedule();
