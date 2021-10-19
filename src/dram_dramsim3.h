@@ -79,6 +79,11 @@ public:
    */
   void run_a_cycle(bool);
 
+  /**
+   * Print function for debugging
+   */
+  void print_q(void);
+
 private:
   dram_dramsim3_c();  // do not implement
 

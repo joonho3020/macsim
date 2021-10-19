@@ -69,8 +69,8 @@ void ioctrl_c::run_a_cycle(bool pll_locked) {
   m_cme->run_a_cycle(pll_locked);
   m_rc->run_a_cycle(pll_locked);
 
-  if (*KNOB(KNOB_DEBUG_IO_SYS)) {
-    m_cme->print_cxlt3_info();
-    m_rc->print_rc_info();
-  }
+/* if (*KNOB(KNOB_DEBUG_IO_SYS)) { */
+/* m_cme->print_cxlt3_info(); */
+/* m_rc->print_rc_info(); */
+/* } */
 }

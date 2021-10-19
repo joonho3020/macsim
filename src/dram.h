@@ -87,6 +87,11 @@ public:
    */
   virtual void run_a_cycle(bool) = 0;
 
+  /**
+   * Pop a request in pushed q
+   */
+  void pop_pushedq(mem_req_s* req);
+
 protected:
   /**
    * Send a packet to NOC
