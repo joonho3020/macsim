@@ -263,7 +263,7 @@ bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
       return false;
     } else {
       cme_entry_s* new_entry = m_cme_free_list->front();
-      new_entry->set(mem_req, m_simBase->m_core_cycle[0]);
+      new_entry->set(mem_req, m_simBase->m_core_cycle[mem_req->m_core_id]);
       m_cmein_buffer->push_back(new_entry);
       m_cme_free_list->pop_front();
 
