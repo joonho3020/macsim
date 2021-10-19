@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
  * SVN          : $Id: cxl_t3.h 867 2009-11-05 02:28:12Z kacear $:
  * Description  : CXL type 3 device
  *********************************************************************************************/
+#ifdef CXL
 #ifdef DRAMSIM3
 
 #include <iostream>
@@ -241,3 +242,4 @@ void cxlt3_c::print_cxlt3_info() {
 }
 
 #endif //DRAMSIM3
+#endif //CXL

@@ -80,6 +80,7 @@ link_directories(${DRAMSIM3_SRC_DIR})
 
 add_executable(${PROJECT_NAME} ${MACSIM_SRCS})
 target_compile_definitions(${PROJECT_NAME} PUBLIC DRAMSIM3)
+target_compile_definitions(${PROJECT_NAME} PUBLIC CXL)
 target_link_libraries(${PROJECT_NAME} ${DRAMSIM3_SRC_DIR}/libdramsim3.a libz.a)
 target_include_directories(${PROJECT_NAME} PUBLIC ${DRAMSIM3_SRC_DIR}/src)
 add_dependencies(${PROJECT_NAME} dramsim_lib)

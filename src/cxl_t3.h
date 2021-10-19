@@ -37,6 +37,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef CXLT3_H
 #define CXLT3_H
 
+#ifdef CXL
 #ifdef DRAMSIM3
 #include <list>
 
@@ -114,6 +115,7 @@ private:
   Counter m_cycle_internal; /**< internal cycle for DRAM */
 };
 
-#endif //DRAMSIM3
+#endif // DRAMSIM3
+#endif // CXL
 
 #endif //CXLT3_H

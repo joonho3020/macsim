@@ -541,8 +541,10 @@ void macsim_c::init_network(void) {
 // initialize IO
 // =======================================
 void macsim_c::init_io(void) {
+#ifdef CXL
   m_ioctrl = new ioctrl_c(m_simBase);
   m_ioctrl->initialize();
+#endif
 }
 
 // =======================================
@@ -913,6 +915,7 @@ int macsim_c::run_a_cycle() {
     m_dyfr->update();
   }
 
+#ifdef CXL
   // run IO hierarchy
   if (m_clock_internal == m_domain_next[CLOCK_IO]) {
     m_ioctrl->run_a_cycle(pll_locked);
@@ -923,6 +926,7 @@ int macsim_c::run_a_cycle() {
   if (m_clock_internal == m_domain_next[CLOCK_MC]) {
     m_ioctrl->m_cme->run_a_cycle_internal(pll_locked);
   }
+#endif
 
   // handle page faults
   m_MMU->handle_page_faults();
