@@ -42,8 +42,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "pcie_rc.h"
 #include "macsim.h"
 #include "memory.h"
-#include "all_knobs.h"
 #include "debug_macros.h"
+
+#include "all_knobs.h"
+#include "statistics.h"
 
 #include "dram_ramulator.h"
 #include "ramulator/src/Request.h"
@@ -111,6 +113,7 @@ void cxlt3_c::start_transaction() {
     mem_req_s* req = *I;
     if (push_txvc(req)) {
       cme_resp_queue.pop_front();
+      req->m_state = CME_PCIE_RETURNING;
     } else {
       break;
     }
@@ -165,6 +168,7 @@ bool cxlt3_c::push_ramu_req(mem_req_s* req) {
 
     // added counter to track requests in flight
     ++cme_requestsInFlight;
+    req->m_state = CME_REQ_START;
 
     return true;
   } else {
@@ -186,6 +190,9 @@ void cxlt3_c::readComplete(ramulator::Request &ramu_req) {
 
   // added counter to track requests in flight
   --cme_requestsInFlight;
+  req->m_state = CME_REQ_DONE;
+  
+  // read stats should be updated when they return to MC
 
   DEBUG("Queuing response for address 0x%lx\n", ramu_req.addr);
   cme_resp_queue.push_back(req);
@@ -200,6 +207,12 @@ void cxlt3_c::writeComplete(ramulator::Request &ramu_req) {
 
   // added counter to track requests in flight
   --cme_requestsInFlight;
+  req->m_state = CME_REQ_DONE;
+
+  // update CME return latency stats : writes don't return so finish here
+  STAT_EVENT(AVG_CME_WR_TURN_LATENCY_BASE);
+  STAT_EVENT_N(AVG_CME_WR_TURN_LATENCY, 
+      m_simBase->m_core_cycle[req->m_core_id] - req->m_insert_cycle);
 
   // in case of WB, retire requests here
   DEBUG("Retiring request for address 0x%lx\n", ramu_req.addr);

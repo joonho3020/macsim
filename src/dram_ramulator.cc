@@ -141,6 +141,12 @@ void dram_ramulator_c::readComplete(ramulator::Request &ramu_req) {
 
   // added counter to track requests in flight
   --ramu_requestsInFlight;
+  req->m_state = MEM_DRAM_DONE;
+
+  // update turn latency stats
+  STAT_EVENT(AVG_DIMM_RD_TURN_LATENCY_BASE);
+  STAT_EVENT_N(AVG_DIMM_RD_TURN_LATENCY, 
+     m_simBase->m_core_cycle[req->m_core_id] - req->m_insert_cycle);
 
   DEBUG("Queuing response for address 0x%lx\n", ramu_req.addr);
   ramu_resp_queue.push_back(req);
@@ -155,6 +161,12 @@ void dram_ramulator_c::writeComplete(ramulator::Request &ramu_req) {
 
   // added counter to track requests in flight
   --ramu_requestsInFlight;
+  req->m_state = MEM_DRAM_DONE;
+
+  // update turn latency stats
+  STAT_EVENT(AVG_DIMM_WR_TURN_LATENCY_BASE);
+  STAT_EVENT_N(AVG_DIMM_WR_TURN_LATENCY, 
+      m_simBase->m_core_cycle[req->m_core_id] - req->m_insert_cycle);
 
   // in case of WB, retire requests here
   DEBUG("Retiring request for address 0x%lx\n", ramu_req.addr);
@@ -196,10 +208,17 @@ void dram_ramulator_c::send_cme_req() {
     if (!req) {
       break;
     } else {
+      assert(req->m_type != MRT_WB);
+
       cme_resp_queue.push_back(req);
-      if (req->m_type != MRT_WB) {
-        cme_requestsInFlight--;
-      }
+      cme_requestsInFlight--;
+
+      req->m_state = CME_REQ_DONE;
+
+      // update return latency related stats
+      STAT_EVENT(AVG_CME_RD_TURN_LATENCY_BASE);
+      STAT_EVENT_N(AVG_CME_RD_TURN_LATENCY, 
+          m_simBase->m_core_cycle[req->m_core_id] - req->m_insert_cycle);
     }
   }
 
@@ -257,6 +276,8 @@ void dram_ramulator_c::receive_ramu_req(mem_req_s* req) {
 
     // added counter to track requests in flight
     ++ramu_requestsInFlight;
+    req->m_state = MEM_DRAM_START;
+    req->m_insert_cycle = m_simBase->m_core_cycle[req->m_core_id];
 
     NETWORK->receive_pop(MEM_MC, m_id);
     if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
@@ -275,6 +296,10 @@ void dram_ramulator_c::receive_cme_req(mem_req_s* req) {
 #ifdef CXL
   pcie_rc_c* root_complex = m_simBase->m_ioctrl->m_rc;
   root_complex->insert_request(req);
+
+  req->m_cmereq = true;
+  req->m_state = CME_PCIE_SENDING;
+  req->m_insert_cycle = m_simBase->m_core_cycle[req->m_core_id];
 
   // added counter to track requests in flight
   if (req->m_type != MRT_WB) {

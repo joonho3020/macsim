@@ -1986,13 +1986,23 @@ void memory_c::free_req(int core_id, mem_req_s* req) {
   if (!req->m_cmereq) {
     STAT_EVENT(AVG_DIMM_LATENCY_BASE);
     STAT_EVENT_N(AVG_DIMM_LATENCY, m_cycle - req->m_in);
-    STAT_EVENT(AVG_DIMM_RD_LATENCY_BASE);
-    STAT_EVENT_N(AVG_DIMM_RD_LATENCY, m_cycle - req->m_in);
+    if (req->m_type != MRT_WB) {
+      STAT_EVENT(AVG_DIMM_RD_LATENCY_BASE);
+      STAT_EVENT_N(AVG_DIMM_RD_LATENCY, m_cycle - req->m_in);
+    } else {
+      STAT_EVENT(AVG_DIMM_WR_LATENCY_BASE);
+      STAT_EVENT_N(AVG_DIMM_WR_LATENCY, m_cycle - req->m_in);
+    }
   } else {
     STAT_EVENT(AVG_CME_LATENCY_BASE);
     STAT_EVENT_N(AVG_CME_LATENCY, m_cycle - req->m_in);
-    STAT_EVENT(AVG_CME_RD_LATENCY_BASE);
-    STAT_EVENT_N(AVG_CME_RD_LATENCY, m_cycle - req->m_in);
+    if (req->m_type != MRT_WB) {
+      STAT_EVENT(AVG_CME_RD_LATENCY_BASE);
+      STAT_EVENT_N(AVG_CME_RD_LATENCY, m_cycle - req->m_in);
+    } else {
+      STAT_EVENT(AVG_CME_WR_LATENCY_BASE);
+      STAT_EVENT_N(AVG_CME_WR_LATENCY, m_cycle - req->m_in);
+    }
   }
 
   // when there are still merged requests, call done wrapper function

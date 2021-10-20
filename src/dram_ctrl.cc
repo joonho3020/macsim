@@ -284,7 +284,7 @@ bool dram_ctrl_c::insert_new_req(mem_req_s* mem_req) {
       STAT_EVENT(TOTAL_DRAM);
 
       ++m_total_req;
-      mem_req->m_state = CME_NOC_START;
+/* mem_req->m_state = CME_NOC_START; */
 
       return true;
     }
@@ -645,7 +645,7 @@ void dram_ctrl_c::send(void) {
       if (req_type_allowed[req->m_acc] == false) continue;
 
       req_type_checked[req->m_acc] = true;
-      req->m_state = CME_NOC_DONE;
+/* req->m_state = CME_NOC_DONE; */
       req->m_msg_type = NOC_FILL;
 
       bool insert_packet = 
