@@ -73,11 +73,6 @@ public:
   mem_req_s* pop_request();
 
   /**
-   * Pop a pushed pcie request
-   */
-  void pop_pushedq(mem_req_s* req);
-
-  /**
    * Print for debugging
    */
   void print_rc_info();
@@ -95,7 +90,6 @@ private:
 
 private:
   list<mem_req_s*>* m_pending_req; /**< requests pending */
-  list<mem_req_s*>* m_pushed_req;  /**< requests being processed */
   list<mem_req_s*>* m_done_req;    /**< requests finished */
 };
 

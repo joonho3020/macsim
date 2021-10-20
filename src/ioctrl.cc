@@ -70,10 +70,14 @@ void ioctrl_c::initialize() {
 void ioctrl_c::run_a_cycle(bool pll_locked) {
   m_cme->run_a_cycle(pll_locked);
   m_rc->run_a_cycle(pll_locked);
+  m_cycle++;
 
-/* if (*KNOB(KNOB_DEBUG_IO_SYS)) { */
-/* m_cme->print_cxlt3_info(); */
-/* m_rc->print_rc_info(); */
-/* } */
+  if (*KNOB(KNOB_DEBUG_IO_SYS)) {
+    std::cout << std::endl;
+    std::cout << "io cycle : " << std::dec << m_cycle << std::endl;
+    m_simBase->m_dram_controller[0]->print_req();
+    m_cme->print_cxlt3_info();
+    m_rc->print_rc_info();
+  }
 }
 #endif // CXL

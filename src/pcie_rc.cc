@@ -43,13 +43,11 @@ POSSIBILITY OF SUCH DAMAGE.
 pcie_rc_c::pcie_rc_c(macsim_c* simBase) 
   : pcie_ep_c(simBase) {
   m_pending_req = new list<mem_req_s*>();
-  m_pushed_req = new list<mem_req_s*>();
   m_done_req = new list<mem_req_s*>();
 }
 
 pcie_rc_c::~pcie_rc_c() {
   delete m_pending_req;
-  delete m_pushed_req;
   delete m_done_req;
 }
 
@@ -74,7 +72,6 @@ void pcie_rc_c::start_transaction() {
       ++iter) {
     mem_req_s* req = *iter;
     if(push_txvc(req)) {
-      m_pushed_req->push_back(req);
       tmp_list.push_back(req);
     } else {
       break;
@@ -87,19 +84,13 @@ void pcie_rc_c::start_transaction() {
 }
 
 void pcie_rc_c::end_transaction() {
-  vector<mem_req_s*> tmp_list;
   while (1) {
     mem_req_s* req = pull_rxvc();
     if (!req) {
       break;
     } else {
       m_done_req->push_back(req);
-      tmp_list.push_back(req);
     }
-  }
-
-  for (auto iter = tmp_list.begin(), end = tmp_list.end(); iter != end; iter++) {
-    m_pushed_req->remove(*iter);
   }
 }
 
@@ -117,10 +108,6 @@ mem_req_s* pcie_rc_c::pop_request() {
   }
 }
 
-void pcie_rc_c::pop_pushedq(mem_req_s* req) {
-  m_pushed_req->remove(req);
-}
-
 void pcie_rc_c::print_rc_info() {
   std::cout << "-------------- Root Complex ------------------" << std::endl;
   print_ep_info();
@@ -130,11 +117,6 @@ void pcie_rc_c::print_rc_info() {
     std::cout << std::hex << req->m_addr << " ; ";
   }
 
-  std::cout << "pushed q" << ": ";
-  for (auto req : *m_pushed_req) {
-    std::cout << std::hex << req->m_addr << " ; ";
-  }
-  
   std::cout << "done q" << ": ";
   for (auto req : *m_done_req) {
     std::cout << std::hex << req->m_addr << " ; ";

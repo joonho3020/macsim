@@ -48,6 +48,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "dram.h"
 #include "memreq_info.h"
 #include "network.h"
+#include "cxl_t3.h"
+#include "global_defs.h"
 
 class dram_ramulator_c : public dram_c
 {

@@ -43,6 +43,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "memory.h"
 #include "network.h"
 #include "statistics.h"
+#include "ioctrl.h"
+#include "pcie_rc.h"
 
 #include "dram_ramulator.h"
 #include "ramulator/src/Request.h"
@@ -81,7 +83,7 @@ void dram_ramulator_c::init(int id) {
 
 void dram_ramulator_c::print_req(void) {
   std::cout << "---- DIMM ----" << std::endl;
-  std::cout << std::dec << "DIMM reqs: " << ramu_requestsInFlight
+  std::cout << std::dec << "DIMM reqs: " << ramu_requestsInFlight << " "
                         << "CME reqs: " << cme_requestsInFlight << std::endl;
 
   std::cout << "Read q" << std::endl;
@@ -120,13 +122,9 @@ void dram_ramulator_c::print_req(void) {
 }
 
 void dram_ramulator_c::run_a_cycle(bool lock) {
-  if (*KNOB(KNOB_DEBUG_IO_SYS)) {
-    print_req();
-#ifdef CXL
-    m_simBase->m_ioctrl->m_cme->print_cxlt3_info();
-    m_simBase->m_ioctrl->m_rc->print_rc_info();
-#endif
-  }
+/* if (*KNOB(KNOB_DEBUG_IO_SYS)) { */
+/* print_req(); */
+/* } */
 
   send();
   wrapper->tick();
@@ -190,6 +188,8 @@ void dram_ramulator_c::send_ramu_req() {
 
 void dram_ramulator_c::send_cme_req() {
 #ifdef CXL
+  pcie_rc_c* root_complex = m_simBase->m_ioctrl->m_rc;
+
   // returned CME requests
   while (1) {
     mem_req_s* req = root_complex->pop_request();
@@ -237,7 +237,7 @@ void dram_ramulator_c::receive_ramu_req(mem_req_s* req) {
   bool is_write = (req->m_type == MRT_WB);
   auto req_type = (is_write) ? ramulator::Request::Type::WRITE
                              : ramulator::Request::Type::READ;
-  auto cb_func = (is_write) ? write_cb_func : read_cb_func;
+  auto& cb_func = (is_write) ? write_cb_func : read_cb_func;
   long addr = static_cast<long>(req->m_addr);
 
   ramulator::Request ramu_req(addr, req_type, cb_func, req->m_core_id);
@@ -275,7 +275,8 @@ void dram_ramulator_c::receive_cme_req(mem_req_s* req) {
   root_complex->insert_request(req);
 
   // added counter to track requests in flight
-  ++cme_requestsInFlight;
+  if (req->m_type == MRT_WB)
+    ++cme_requestsInFlight;
 
   NETWORK->receive_pop(MEM_MC, m_id);
   if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {

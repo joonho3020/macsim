@@ -28,3 +28,5 @@ POSSIBILITY OF SUCH DAMAGE.
 
 param<RAMULATOR_CONFIG_FILE, ramulator_config_file, string, ../src/ramulator/configs/DDR4-config.cfg>
 param<RAMULATOR_CACHELINE_SIZE, ramulator_cacheline_size, int, 128>
+param<RAMUDIMM_STATOUT, ramulator_dimm_statout, string, ramu_dimm.stat.out>
+param<RAMUCME_STATOUT, ramulator_cme_statout, string, ramu_cme.stat.out>

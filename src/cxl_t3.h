@@ -38,7 +38,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #define CXLT3_H
 
 #ifdef CXL
-#include <list>
+#include <deque>
+#include <map>
+#include <tuple>
 
 #include "macsim.h"
 #include "dram.h"
@@ -46,9 +48,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "pcie_endpoint.h"
 #include "packet_info.h"
 
-namespace dramsim3{
-  class MemorySystem;
-};
+#include "ramulator_wrapper.h"
+#include "ramulator/src/Config.h"
 
 class cxlt3_c : public pcie_ep_c
 {
@@ -95,21 +96,32 @@ private:
   void process_pending_req();
 
   /**
-   * DRAMSim3 read callback function
+   * Push request to ramulator
    */
-  void read_callback(unsigned, uint64_t);
+  bool push_ramu_req(mem_req_s* req);
 
   /**
-   * DRAMSim3 write callback function
+   * Read callback function
    */
-  void write_callback(unsigned, uint64_t);
+  void readComplete(ramulator::Request &ramu_req);
+
+  /** 
+   * Write callback function
+   */
+  void writeComplete(ramulator::Request &ramu_req);
 
 private:
+  unsigned int cme_requestsInFlight;
+  std::map<long, std::deque<mem_req_s *>> cme_reads;
+  std::map<long, std::deque<mem_req_s *>> cme_writes;
+  std::deque<mem_req_s *> cme_resp_queue;
+
+  ramulator::Config configs;
+  ramulator::RamulatorWrapper *wrapper;
+  std::function<void(ramulator::Request &)> read_cb_func;
+  std::function<void(ramulator::Request &)> write_cb_func;
+
   list<mem_req_s*>* m_pending_req; /**< mem reqs pending */
-  list<mem_req_s*>* m_pushed_req; /**< mem reqs pushed to dramsim */
-  list<mem_req_s*>* m_done_req; /**< mem reqs returned from dramsim */
-  list<mem_req_s*>* m_tmp_done_req; /**< mem reqs with additional latency */
-  dramsim3::MemorySystem* m_dramsim; /**< DRAMSim3 */
 
   Counter m_cycle_internal; /**< internal cycle for DRAM */
 };

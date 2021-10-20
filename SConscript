@@ -209,8 +209,6 @@ if flags['dram3'] == '1':
 # Ramulator
 #########################################################################################
 ramulator_srcs = [
-  'src/ramulator_wrapper.cc',
-  'src/dram_ramulator.cc',
   'src/ramulator/src/Config.cpp',
   'src/ramulator/src/Controller.cpp',
   'src/ramulator/src/DDR3.cpp',
@@ -301,6 +299,8 @@ macsim_src = [
   'src/resource.cc',
   'src/mmu.cc',
   'src/tlb.cc',
+  'src/ramulator_wrapper.cc',
+  'src/dram_ramulator.cc',
   'src/dram_dramsim.cc',
   'src/dram_dramsim3.cc',
   'src/pcie_endpoint.cc',

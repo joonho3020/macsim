@@ -286,37 +286,6 @@ bool pcie_ep_c::push_txvc(mem_req_s* mem_req) {
 
 // used for end_transaction
 mem_req_s* pcie_ep_c::pull_rxvc() {
-/* // pull from VC buffer with minimum remaining capacity */
-/* int min_remain_size = m_vc_cap; */
-/* int min_remain_id = -1; */
-/* for (int ii = 0; ii < m_vc_cnt; ii++) { */
-/* int cur_remain = m_rxvc_size[ii]; */
-/* if (min_remain_size > cur_remain) { */
-/* min_remain_size = cur_remain; */
-/* min_remain_id = ii; */
-/* } */
-/* } */
-
-/* // all buffers are empty */
-/* if (min_remain_id == -1) { */
-/* return NULL; */
-/* } */
-/* // found buffer to pull */
-/* else { */
-/* int vc_id = min_remain_id; */
-/* packet_info_s* pkt = pull_vc_buffer(vc_id, m_rxvc_size, m_rxvc_buff); */
-
-/* // update peer endpoint credit */
-/* m_peer_ep->update_credit(vc_id, m_rxvc_size[vc_id]); */
-
-/* assert(pkt->m_vc_id == vc_id); */
-/* assert(pkt->m_req); */
-
-/* mem_req_s* mem_req = pkt->m_req; */
-/* m_pkt_pool->release_entry(pkt); */
-/* return mem_req; */
-/* } */
-
   vector<pair<int, int>> candidate;
   for (int ii = 0; ii < m_vc_cnt; ii++) {
     // empty
