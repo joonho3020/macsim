@@ -197,7 +197,9 @@ void dram_ramulator_c::send_cme_req() {
       break;
     } else {
       cme_resp_queue.push_back(req);
-      cme_requestsInFlight--;
+      if (req->m_type != MRT_WB) {
+        cme_requestsInFlight--;
+      }
     }
   }
 
@@ -275,8 +277,9 @@ void dram_ramulator_c::receive_cme_req(mem_req_s* req) {
   root_complex->insert_request(req);
 
   // added counter to track requests in flight
-  if (req->m_type == MRT_WB)
+  if (req->m_type != MRT_WB) {
     ++cme_requestsInFlight;
+  }
 
   NETWORK->receive_pop(MEM_MC, m_id);
   if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
