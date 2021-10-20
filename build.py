@@ -30,6 +30,7 @@ def parse_arg():
   parser.add_option("--power", action="store_true", dest="power", default=False, help="EI Power")
   parser.add_option("--iris", action="store_true", dest="iris", default=False, help="IRIS")
   parser.add_option("--ramulator", action="store_true", dest="ramulator", default=False, help="Ramulator")
+  parser.add_option("--cxl", action="store_true", dest="cxl", default=False, help="cxl")
 
   return parser
 
@@ -112,6 +113,10 @@ def main():
   # Ramulator
   if options.ramulator:
     cmd += 'ramulator=1 '
+
+  # CXL
+  if options.cxl:
+    cmd += 'cxl=1 '
 
   ## Parallel building 
   cmd += '-j %s ' % options.thread

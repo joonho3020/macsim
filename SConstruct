@@ -80,6 +80,7 @@ flags['gprof']         = Config.get('Build', 'gprof', fallback='0')
 flags['pin_3_13_trace'] = Config.get('Build', 'pin_3_13_trace', fallback='0')
 flags['val']           = Config.get('Build_Extra', 'val', fallback='0')
 flags['ramulator']     = Config.get('Library', 'ramulator', fallback='0')
+flags['cxl']           = Config.get('Build', 'cxl', fallback='0')
 
 ## Configuration from commandline
 flags['debug']         = ARGUMENTS.get('debug', flags['debug'])
@@ -92,6 +93,7 @@ flags['dram3']         = ARGUMENTS.get('dram3', flags['dram3'])
 flags['val']           = ARGUMENTS.get('val', flags['val'])
 flags['qsim']          = ARGUMENTS.get('qsim', flags['qsim'])
 flags['ramulator']     = ARGUMENTS.get('ramulator', flags['ramulator'])
+flags['cxl']           = ARGUMENTS.get('cxl', flags['cxl'])
 
 
 ## Checkout DRAMSim2 copy
