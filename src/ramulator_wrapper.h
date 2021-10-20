@@ -21,7 +21,7 @@ private:
 
 public:
   double tCK;
-  RamulatorWrapper(const Config &configs, int cacheline);
+  RamulatorWrapper(const Config &configs, int cacheline, string statout);
   ~RamulatorWrapper();
   void tick();
   bool send(Request req);

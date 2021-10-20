@@ -35,8 +35,10 @@ static map<string, function<MemoryBase *(const Config &, int)>> name_to_func = {
   {"SALP-MASA", &MemoryFactory<SALP>::create},
 };
 
-RamulatorWrapper::RamulatorWrapper(const Config &configs, int cacheline) {
-  Stats::statlist.output("ramulator.stat.out");
+RamulatorWrapper::RamulatorWrapper(const Config &configs, int cacheline, 
+    string statout) {
+  // FIXME : statlist is declared inside src/ramulator/src/StatType.{cc & h}
+/* Stats::statlist.output(statout); */
   const string &std_name = configs["standard"];
   assert(name_to_func.find(std_name) != name_to_func.end() &&
          "unrecognized standard name");

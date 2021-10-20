@@ -135,13 +135,14 @@ dram_scheduling_policy RAMULATOR
 dramsim3_config ./DDR4_8Gb_x16_2400.ini
 dramsim3_out ./dramsim-stats
 ramulator_config_file ./DDR4-config.cfg
+ramulator_cme_statout ./ramulcme.stat.out
 
 # Network
 noc_topology mesh
 noc_dimension 2
 
 # CXL
-cme_enable 1
+cme_enable 0
 cme_addr_min 139637976727552
 cme_dramsim3_config ./DDR4_8Gb_x16_2400.ini
 
@@ -174,7 +175,7 @@ debug_trace_read 0
 debug_sim_thread_schedule 0
 debug_cache_lib 0
 debug_bp_dir 0
-debug_io_sys 1
+debug_io_sys 0
 
 
 # OUTPUT Redirect
