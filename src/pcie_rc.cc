@@ -34,6 +34,8 @@ POSSIBILITY OF SUCH DAMAGE.
  * Description  : PCIe root complex
  *********************************************************************************************/
 
+#ifdef CXL
+
 #include <iostream>
 #include "pcie_rc.h"
 
@@ -139,3 +141,4 @@ void pcie_rc_c::print_rc_info() {
   }
   std::cout << std::endl;
 }
+#endif // CXL

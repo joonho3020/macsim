@@ -37,6 +37,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef PCIE_RC_H
 #define PCIE_RC_H
 
+#ifdef CXL
+
 #include <list>
 
 #include "pcie_endpoint.h"
@@ -97,4 +99,5 @@ private:
   list<mem_req_s*>* m_done_req;    /**< requests finished */
 };
 
+#endif // CXL
 #endif // PCIE_RC_H

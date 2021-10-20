@@ -37,6 +37,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef PCIE_EP_H
 #define PCIE_EP_H
 
+#ifdef CXL
+
 #include <list>
 #include <deque>
 
@@ -206,4 +208,5 @@ protected:
   Counter m_cycle; /**< PCIe clock cycle */
 };
 
+#endif // CXL
 #endif //PCIE_EP_H

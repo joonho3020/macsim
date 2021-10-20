@@ -37,6 +37,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef IOCTRL_H
 #define IOCTRL_H
 
+#ifdef CXL
+
 #include "macsim.h"
 #include "packet_info.h"
 
@@ -72,4 +74,5 @@ private:
   pool_c<packet_info_s>* m_pkt_pool;
 };
 
+#endif // CXL
 #endif //IOCTRL_H

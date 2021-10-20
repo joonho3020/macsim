@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
  * SVN          : $Id: cxl_t3.h 867 2009-11-05 02:28:12Z kacear $:
  * Description  : PCIe endpoint device
  *********************************************************************************************/
+#ifdef CXL
 #include <cassert>
 #include <iostream>
 #include <algorithm>
@@ -406,3 +407,4 @@ void pcie_ep_c::print_ep_info() {
     std::cout << std::hex << pkt->m_req->m_addr << "; ";
   }
 }
+#endif // CXL

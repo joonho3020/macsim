@@ -34,7 +34,6 @@ POSSIBILITY OF SUCH DAMAGE.
  * Description  : CXL type 3 device
  *********************************************************************************************/
 #ifdef CXL
-#ifdef DRAMSIM3
 
 #include <iostream>
 #include <list>
@@ -241,5 +240,4 @@ void cxlt3_c::print_cxlt3_info() {
   std::cout << std::endl;
 }
 
-#endif //DRAMSIM3
 #endif //CXL

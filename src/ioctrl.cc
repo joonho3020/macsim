@@ -34,6 +34,8 @@ POSSIBILITY OF SUCH DAMAGE.
  * Description  : IO domain
  *********************************************************************************************/
 
+#ifdef CXL
+
 #include "ioctrl.h"
 #include "pcie_rc.h"
 #include "cxl_t3.h"
@@ -74,3 +76,4 @@ void ioctrl_c::run_a_cycle(bool pll_locked) {
 /* m_rc->print_rc_info(); */
 /* } */
 }
+#endif // CXL

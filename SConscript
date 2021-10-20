@@ -310,8 +310,6 @@ macsim_src = [
   'src/packet_info.cc'
 ]
 
-
-
 #########################################################################################
 # Libraries
 #########################################################################################
@@ -329,7 +327,6 @@ if flags['dram'] == '1':
 if flags['dram3'] == '1':
   libraries.append('dramsim3')
   env['CPPDEFINES'].append('DRAMSIM3')
-  env['CPPDEFINES'].append('CXL')
   env['CPPPATH'] += ['#src/DRAMsim3/src']
   env['CPPPATH'] += ['#src/DRAMsim3/ext/fmt/include']
   env['CPPPATH'] += ['#src/DRAMsim3/ext/headers']
