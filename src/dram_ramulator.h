@@ -77,6 +77,9 @@ private:
   // Write callback function
   void writeComplete(ramulator::Request &ramu_req);
 
+  // Send a request to DIMM
+  void send_ramu_req(mem_req_s* req);
+
 public:
   // Constructor
   dram_ramulator_c(macsim_c *simBase);

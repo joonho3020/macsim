@@ -141,43 +141,45 @@ void dram_ramulator_c::receive(void) {
   if (!req) return;
 
   long addr = static_cast<long>(req->m_addr);
-  bool accepted = true;
-  if (req->m_type != MRT_WB) {
-    ramulator::Request ramu_req(addr, ramulator::Request::Type::READ,
-                                read_cb_func, req->m_core_id);
-    accepted = wrapper->send(ramu_req);
-    if (accepted) {
-      reads[ramu_req.addr].push_back(req);
-      DEBUG("Read to 0x%lx accepted. req:%d\n", ramu_req.addr, req->m_id);
-
-      // added counter to track requests in flight
-      ++requestsInFlight;
-
-      NETWORK->receive_pop(MEM_MC, m_id);
-      if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
-        m_simBase->m_bug_detector->deallocate_noc(req);
-      }
-    } else {
-      DEBUG("Read to 0x%lx NOT accepted. req:%d\n", ramu_req.addr, req->m_id);
-    }
+  if (addr > *KNOB(KNOB_CME_RANGE) && *KNOB(KNOB_CME_ENABLE)) {
+    // insert to cxl
   } else {
-    ramulator::Request ramu_req(addr, ramulator::Request::Type::WRITE,
-                                write_cb_func, req->m_core_id);
-    accepted = wrapper->send(ramu_req);
-    if (accepted) {
+    send_ramu_req(req);
+  }
+}
+
+void dram_ramulator_c::send_ramu_req(mem_req_s* req) {
+  bool is_write = (req->m_type == MRT_WB);
+  auto req_type = (is_write) ? ramulator::Request::Type::WRITE
+                             : ramulator::Request::Type::READ;
+  auto cb_func = (is_write) ? write_cb_func : read_cb_func;
+  long addr = static_cast<long>(req->m_addr);
+
+  ramulator::Request ramu_req(addr, req_type, cb_func, req->m_core_id);
+  bool accepted = wrapper->send(ramu_req);
+
+  if (accepted) {
+    if (is_write) {
       writes[ramu_req.addr].push_back(req);
       DEBUG("Write to 0x%lx accepted and served. req:%d\n", ramu_req.addr,
             req->m_id);
-
-      // added counter to track requests in flight
-      ++requestsInFlight;
-
-      NETWORK->receive_pop(MEM_MC, m_id);
-      if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
-        m_simBase->m_bug_detector->deallocate_noc(req);
-      }
     } else {
+      reads[ramu_req.addr].push_back(req);
+      DEBUG("Read to 0x%lx accepted. req:%d\n", ramu_req.addr, req->m_id);
+    }
+
+    // added counter to track requests in flight
+    ++requestsInFlight;
+
+    NETWORK->receive_pop(MEM_MC, m_id);
+    if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
+      m_simBase->m_bug_detector->deallocate_noc(req);
+    }
+  } else {
+    if (is_write) {
       DEBUG("Write to 0x%lx NOT accepted. req:%d\n", ramu_req.addr, req->m_id);
+    } else {
+      DEBUG("Read to 0x%lx NOT accepted. req:%d\n", ramu_req.addr, req->m_id);
     }
   }
 }
