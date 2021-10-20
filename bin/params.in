@@ -131,9 +131,10 @@ dram_precharge 10
 dram_num_banks 16
 dram_num_channel 8
 dram_rowbuffer_size 2048
-dram_scheduling_policy DRAMSIM3
+dram_scheduling_policy RAMULATOR
 dramsim3_config ./DDR4_8Gb_x16_2400.ini
 dramsim3_out ./dramsim-stats
+ramulator_config_file ./DDR4-config.cfg
 
 # Network
 noc_topology mesh
