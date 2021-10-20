@@ -52,10 +52,13 @@ POSSIBILITY OF SUCH DAMAGE.
 class dram_ramulator_c : public dram_c
 {
 private:
-  unsigned int requestsInFlight;
-  std::map<long, std::deque<mem_req_s *>> reads;
-  std::map<long, std::deque<mem_req_s *>> writes;
-  std::deque<mem_req_s *> resp_queue;
+  unsigned int ramu_requestsInFlight;
+  std::map<long, std::deque<mem_req_s *>> ramu_reads;
+  std::map<long, std::deque<mem_req_s *>> ramu_writes;
+  std::deque<mem_req_s *> ramu_resp_queue;
+
+  unsigned int cme_requestsInFlight;
+  std::deque<mem_req_s *> cme_resp_queue;
 
   ramulator::Config configs;
   ramulator::RamulatorWrapper *wrapper;
@@ -77,8 +80,17 @@ private:
   // Write callback function
   void writeComplete(ramulator::Request &ramu_req);
 
+  // Receive a request to DIMM
+  void receive_ramu_req(mem_req_s* req);
+
+  // Receive a request to CME
+  void receive_cme_req(mem_req_s* req);
+
   // Send a request to DIMM
-  void send_ramu_req(mem_req_s* req);
+  void send_ramu_req(void);
+
+  // Send a request to CME
+  void send_cme_req(void);
 
 public:
   // Constructor
