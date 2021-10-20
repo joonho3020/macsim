@@ -254,8 +254,6 @@ macsim_src = [
   'src/core.cc',
   'src/dram.cc',
   'src/dram_ctrl.cc',
-  'src/dram_dramsim.cc',
-  'src/dram_dramsim3.cc',
   'src/exec.cc',
   'src/factory_class.cc',
   'src/fetch_factory.cc',
@@ -302,7 +300,14 @@ macsim_src = [
   'src/cs_disas.cc',
   'src/resource.cc',
   'src/mmu.cc',
-  'src/tlb.cc'
+  'src/tlb.cc',
+  'src/dram_dramsim.cc',
+  'src/dram_dramsim3.cc',
+  'src/pcie_endpoint.cc',
+  'src/pcie_rc.cc',
+  'src/cxl_t3.cc',
+  'src/ioctrl.cc',
+  'src/packet_info.cc'
 ]
 
 
@@ -324,10 +329,13 @@ if flags['dram'] == '1':
 if flags['dram3'] == '1':
   libraries.append('dramsim3')
   env['CPPDEFINES'].append('DRAMSIM3')
+  env['CPPDEFINES'].append('CXL')
   env['CPPPATH'] += ['#src/DRAMsim3/src']
   env['CPPPATH'] += ['#src/DRAMsim3/ext/fmt/include']
-  env['CPPPATH'] += ['#src/DRAMsim3/ext/fmt/include/fmt']
   env['CPPPATH'] += ['#src/DRAMsim3/ext/headers']
+  env['CPPPATH'] += ['#src/DRAMsim3/ext/headers']
+  env['CPPPATH'] += ['#src/DRAMsim3/ext/headers']
+  env['CPPFLAGS'] += '-fPIC -DFMT_HEADER_ONLY=1'
   env['LIBPATH'] += [Dir('.')]
 
 if flags['iris'] == '1':
