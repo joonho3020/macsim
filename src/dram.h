@@ -39,6 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <set>
 #include <list>
+#include <map>
 
 #include "macsim.h"
 
@@ -122,6 +123,7 @@ protected:
   list<cme_entry_s*>* m_cmein_buffer; /**< incoming cme requests */
   list<mem_req_s*>* m_cmepend_buffer; /**< serving cme requests */
   list<mem_req_s*>* m_cmeout_buffer; /**< cme done requests */
+  map<Addr, Counter> m_access_dist;
 };
 
 // wrapper function to allocate a dram scheduler

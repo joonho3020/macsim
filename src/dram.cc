@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************************************/
 
 #include <iostream>
+#include <fstream>
 #include "dram.h"
 
 cme_entry_s::cme_entry_s(macsim_c *simBase) {
@@ -79,6 +80,17 @@ dram_c::~dram_c() {
   } else {
     std::cerr << "No accessed memory" << std::endl;
   }
+  ofstream address_file;
+  string fname = "address_dist.txt";
+
+  address_file.open(fname.c_str());
+  if (address_file.is_open()) {
+    for (auto iter : m_access_dist) {
+      address_file << std::hex << iter.first << " " 
+                   << std::dec << iter.second << std::endl;
+    }
+  }
+  address_file.close();
 
   delete m_cmein_buffer;
   delete m_cmepend_buffer;

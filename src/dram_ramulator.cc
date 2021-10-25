@@ -283,6 +283,13 @@ void dram_ramulator_c::receive_ramu_req(mem_req_s* req) {
     if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
       m_simBase->m_bug_detector->deallocate_noc(req);
     }
+
+    STAT_EVENT(DIMM_REQ_CNT);
+    if (m_access_dist.find(req->m_addr) == m_access_dist.end()) {
+      m_access_dist[req->m_addr] = 1;
+    } else {
+      m_access_dist[req->m_addr]++;
+    }
   } else {
     if (is_write) {
       DEBUG("Write to 0x%lx NOT accepted. req:%d\n", ramu_req.addr, req->m_id);
@@ -309,6 +316,13 @@ void dram_ramulator_c::receive_cme_req(mem_req_s* req) {
   NETWORK->receive_pop(MEM_MC, m_id);
   if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
     m_simBase->m_bug_detector->deallocate_noc(req);
+  }
+
+  STAT_EVENT(CME_REQ_CNT);
+  if (m_access_dist.find(req->m_addr) == m_access_dist.end()) {
+    m_access_dist[req->m_addr] = 1;
+  } else {
+    m_access_dist[req->m_addr]++;
   }
 #endif
 }
