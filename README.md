@@ -1,4 +1,15 @@
 # Macsim 
+## CXL Branch Usage
+- Quick start
+```{bash}
+git clone https://github.com/snu-comparch/macsim.git
+git checkout cxl
+git submodule init
+git submodule update src/ramulator
+./build.py --ramulator --cxl
+cp src/ramulator/configs/* ./bin
+```
+
 ## Introduction
 
 * MacSim is a heterogeneous architecture timing model simulator that is
