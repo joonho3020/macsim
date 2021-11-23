@@ -6,6 +6,10 @@ git clone https://github.com/snu-comparch/macsim.git
 git checkout cxl
 git submodule init
 git submodule update src/ramulator
+cd scripts
+./knobgen.pl
+./statgen.pl
+cd ..
 ./build.py --ramulator --cxl
 cp src/ramulator/configs/* ./bin
 ```
