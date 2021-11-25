@@ -74,11 +74,11 @@ typedef enum Pkt_Type_enum {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /// \brief pcie packet data structure
 ///////////////////////////////////////////////////////////////////////////////////////////////
-typedef struct packet_info_s {
+typedef struct msg_s {
   /**
    * Constructor
    */
-  packet_info_s(macsim_c* simBase);
+  msg_s(macsim_c* simBase);
   void init(void);
 
   int m_id; /**< unique request id */
@@ -95,6 +95,6 @@ typedef struct packet_info_s {
   Pkt_State m_pkt_state; /**< packet state */
   mem_req_s* m_req; /**< packet may be a result of mem request */
   macsim_c* m_simBase; /**< reference to macsim base class for sim globals */
-} packet_info_s;
+} msg_s;
 
 #endif /* #ifndef MEMORY_H_INCLUDED  */

@@ -60,7 +60,7 @@ public:
   /**
    * Initialize PCIe endpoint
    */
-  void init(int id, pool_c<packet_info_s>* pkt_pool, pcie_ep_c* peer);
+  void init(int id, pool_c<msg_s>* pkt_pool, pcie_ep_c* peer);
 
   /**
    * Tick a cycle
@@ -70,7 +70,12 @@ public:
   /**
    * Receive packet from transmit side & put in rx physical q
    */
-  bool insert_rxphys(packet_info_s* pkt);
+  bool insert_rxphys(msg_s* pkt);
+
+  /**
+   * Checks it has enough credits to send a TLP packet
+   */
+  bool check_credit(msg_s* pkt);
 
   /**
    * Print for debugging
@@ -83,27 +88,7 @@ private:
   /**
    * Gets cycles required to transfer the packet over physical layer
    */
-  Counter get_phys_latency(packet_info_s* pkt);
-
-  /**
-   * Updates how much credits it has
-   */
-  void decrease_credit(packet_info_s* pkt);
-
-  /**
-   * Updates how much credits it has by received flow ctrl packet
-   */
-  void update_credit(packet_info_s* fctrl_pkt);
-
-  /**
-   * Simple updates on credits 
-   */
-  void update_credit(int vc_id, int credit);
-
-  /**
-   * Checks it has enough credits to send a TLP packet
-   */
-  bool check_credit(packet_info_s* pkt);
+  Counter get_phys_latency(msg_s* pkt);
 
   /**
    * Checks it physical layer can accept new entries into the queue
@@ -113,7 +98,7 @@ private:
   /**
    * Inserts a TLP to physical layer
    */
-  void insert_tx_phys(packet_info_s* pkt, bool front);
+  void insert_tx_phys(msg_s* pkt, bool front);
   
 protected:
   /**
@@ -159,20 +144,19 @@ protected:
   /**
    * Initialize a new packet
    */
-  void init_new_pkt(packet_info_s* pkt, int bytes, int vc_id, int credits,
+  void init_new_pkt(msg_s* pkt, int bytes, int vc_id, int credits,
     Pkt_Type pkt_type, Pkt_State pkt_state, mem_req_s* req);
 
   /**
    * Insert packet to VC buffer
    */
-  void insert_vc_buff(int vc_id, int* size, list<packet_info_s*> *buff,
-      packet_info_s* pkt);
+  void insert_vc_buff(int vc_id, int* size, list<msg_s*> *buff,
+      msg_s* pkt);
 
   /**
    * Pull packet from VC buffer
    */
-  packet_info_s* pull_vc_buffer(int vc_id, int* size, 
-      list<packet_info_s*> *buff);
+  msg_s* pull_vc_buffer(int vc_id, int* size, list<msg_s*> *buff);
 
 public:
   static int m_unique_id; /**< unique packet id */
@@ -180,7 +164,7 @@ public:
 private:
   int m_id; /**< unique id of each endpoint */
   int m_memreq_size; /**< size of mem_req_s in bytes */
-  pool_c<packet_info_s>* m_pkt_pool; /**< packet pool */
+  pool_c<msg_s>* m_pkt_pool; /**< packet pool */
   int m_rr_idx; /**< index used for RR policy */
   int m_lanes; /**< PCIe lanes connected to endpoint */
   float m_perlane_bw; /**< PCIe per lane BW in GB (cycles to send 1B) */
@@ -190,17 +174,15 @@ private:
   int m_vc_cap; /**< VC buffer capacity */
   int* m_txvc_size; /**< remaining space of TX VC */
   int* m_rxvc_size; /**< remaining space of RX VC */
-  list<packet_info_s*>* m_txvc_buff; /**< buffer of TX VC */
-  list<packet_info_s*>* m_rxvc_buff; /**< buffer of RX VC */
+  list<msg_s*>* m_txvc_buff; /**< buffer of TX VC */
+  list<msg_s*>* m_rxvc_buff; /**< buffer of RX VC */
 
   int m_credit_cap; /**< initial credit of each VC */
   int* m_credit; /**< remaining RX VC buff of pair endpoint */
 
   int m_phys_cap; /**< maximum numbers of packets in physical layer q */
-  int m_txphys_size; /**< remaining TX phys q entries */
-  int m_rxphys_size; /**< remaining RX phys q entries */
-  deque<packet_info_s*>* m_txphys_q; /**< physical layer send queue */
-  deque<packet_info_s*>* m_rxphys_q; /**< physical layer receive queue */
+  list<msg_s*>* m_txphys_q; /**< physical layer send queue */
+  list<msg_s*>* m_rxphys_q; /**< physical layer receive queue */
 
 protected:
   pcie_ep_c* m_peer_ep; /**< endpoint connected to this endpoint */

@@ -36,12 +36,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "packet_info.h"
 
-packet_info_s::packet_info_s(macsim_c* simBase) {
+msg_s::msg_s(macsim_c* simBase) {
   init();
   m_simBase = simBase;
 }
 
-void packet_info_s::init(void) {
+void msg_s::init(void) {
   m_id = 0;
   m_bytes = 0;
   m_logic_end = 0;

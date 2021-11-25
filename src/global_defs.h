@@ -152,7 +152,7 @@ typedef struct pref_info_s pref_info_s;
 typedef struct HWP_Struct HWP;
 typedef struct gpu_allocq_entry_s gpu_allocq_entry_s;
 typedef struct thread_stat_s thread_stat_s;
-typedef struct packet_info_s packet_info_s;
+typedef struct msg_s msg_s;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Function declarations
