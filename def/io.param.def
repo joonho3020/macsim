@@ -37,11 +37,11 @@ param<CME_DRAMSIM3_CONFIG, cme_dramsim3_config, string, ./configs/DDR5_8Gb_x8_18
 param<CME_DRAMSIM3_OUT, dramsim3_out, string, .>
 
 /* PCIe */
-param<PCIE_MEMREQ_BYTES, pcie_memreq_bytes, int, 64>
 param<PCIE_LANES, pcie_lanes, int, 8>
-param<PCIE_PER_LANE_BW, pcie_per_lane_bw, float, 0.25>
-param<PCIE_VC_CNT, pcie_vc_cnt, int, 4>
-param<PCIE_VC_CAPACITY, pcie_vc_capacity, int, 4096>
+param<PCIE_PER_LANE_BW, pcie_per_lane_bw, float, 32>
+param<PCIE_VC_CNT, pcie_vc_cnt, int, 2>
+param<PCIE_TXVC_CAPACITY, pcie_txvc_capacity, int, 8>
+param<PCIE_RXVC_CAPACITY, pcie_rxvc_capacity, int, 8>
 param<PCIE_PHYS_CAPACITY, pcie_phys_capacity, int, 8>
 param<PCIE_TXLOGIC_LATENCY, pcie_txlogic_latency, uint64_t, 10>
 param<PCIE_RXLOGIC_LATENCY, pcie_rxlogic_latency, uint64_t, 10>

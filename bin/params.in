@@ -146,11 +146,11 @@ cme_enable 0
 cme_addr_min 139637976727552
 cme_dramsim3_config ./DDR4_8Gb_x16_2400.ini
 
-pcie_memreq_bytes 64
 pcie_lanes 8
 pcie_per_lane_bw 0.25
-pcie_vc_cnt 4
-pcie_vc_capacity 1024
+pcie_vc_cnt 2
+pcie_txvc_capacity 8
+pcie_rxvc_capacity 8
 pcie_phys_capacity 8
 pcie_txlogic_latency 10
 pcie_rxlogic_latency 10

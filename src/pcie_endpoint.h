@@ -48,6 +48,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #define TX true
 #define RX false
 
+#define WOD_CHANNEL 0
+#define WD_CHANNEL 1
+
 class pcie_ep_c {
 public:
   /**
@@ -63,7 +66,7 @@ public:
   /**
    * Initialize PCIe endpoint
    */
-  void init(int id, pool_c<message_s>* pkt_pool, pcie_ep_c* peer);
+  void init(int id, bool master, pool_c<message_s>* msg_pool, pcie_ep_c* peer);
 
   /**
    * Tick a cycle
@@ -92,7 +95,9 @@ private:
 
   bool phys_layer_full(bool tx);
 
-  void init_new_pkt(message_s* pkt, int bits, int vc_id, mem_req_s* req);
+  void init_new_msg(message_s* pkt, int bits, int vc_id, mem_req_s* req);
+
+  bool txvc_not_full(int channel);
 
 protected:
   /**
@@ -129,7 +134,8 @@ public:
 
 private:
   int m_id; /**< unique id of each endpoint */
-  pool_c<message_s>* m_pkt_pool; /**< packet pool */
+  bool m_master;
+  pool_c<message_s>* m_msg_pool; /**< packet pool */
 
   int m_lanes; /**< PCIe lanes connected to endpoint */
   float m_perlane_bw; /**< PCIe per lane BW in GB (cycles to send 1B) */
@@ -137,7 +143,8 @@ private:
 
   int m_txvc_rr_idx;
   int m_vc_cnt; /**< VC number */
-  int m_vc_cap; /**< VC buffer capacity */
+  int m_txvc_cap; /**< VC buffer capacity */
+  int m_rxvc_cap; /**< VC buffer capacity */
   list<message_s*>* m_txvc_buff; /**< buffer of TX VC */
   list<message_s*>* m_rxvc_buff; /**< buffer of RX VC */
 

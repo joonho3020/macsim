@@ -63,8 +63,8 @@ ioctrl_c::~ioctrl_c() {
 }
 
 void ioctrl_c::initialize() {
-  m_rc->init(0, m_pkt_pool, m_cme);
-  m_cme->init(1, m_pkt_pool, m_rc);
+  m_rc->init(0, true, m_pkt_pool, m_cme);
+  m_cme->init(1, false, m_pkt_pool, m_rc);
 }
 
 void ioctrl_c::run_a_cycle(bool pll_locked) {

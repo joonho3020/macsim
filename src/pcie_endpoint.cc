@@ -44,6 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "utils.h"
 #include "all_knobs.h"
 #include "all_stats.h"
+#include "assert_macros.h"
 
 int pcie_ep_c::m_unique_id = 0;
 
@@ -62,9 +63,12 @@ pcie_ep_c::pcie_ep_c(macsim_c* simBase) {
 
   // initialize VC buffers & credit
   m_vc_cnt = *KNOB(KNOB_PCIE_VC_CNT);
-  m_vc_cap = *KNOB(KNOB_PCIE_VC_CAPACITY);
+  m_txvc_cap = *KNOB(KNOB_PCIE_TXVC_CAPACITY);
+  m_rxvc_cap = *KNOB(KNOB_PCIE_RXVC_CAPACITY);
   m_txvc_buff = new list<message_s*>[m_vc_cnt];
   m_rxvc_buff = new list<message_s*>[m_vc_cnt];
+
+  ASSERTM(m_vc_cnt == 2, "currently only 2 virtual channels exist\n");
 
   // initialize physical layers
   m_phys_cap = *KNOB(KNOB_PCIE_PHYS_CAPACITY);
@@ -75,9 +79,10 @@ pcie_ep_c::~pcie_ep_c() {
   delete[] m_rxvc_buff;
 }
 
-void pcie_ep_c::init(int id, pool_c<message_s>* pkt_pool, pcie_ep_c* peer) {
+void pcie_ep_c::init(int id, bool master, pool_c<message_s>* msg_pool, pcie_ep_c* peer) {
   m_id = id;
-  m_pkt_pool = pkt_pool;
+  m_master = master;
+  m_msg_pool = msg_pool;
   m_peer_ep = peer;
 }
 
@@ -108,7 +113,7 @@ bool pcie_ep_c::insert_rxphys(message_s* pkt) {
 
 bool pcie_ep_c::check_peer_credit(message_s* pkt) {
   int vc_id = pkt->m_vc_id;
-  return (m_peer_ep->m_rxvc_buff[vc_id].size() < m_peer_ep->m_vc_cap);
+  return (m_peer_ep->m_rxvc_buff[vc_id].size() < m_peer_ep->m_rxvc_cap);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -127,11 +132,15 @@ bool pcie_ep_c::phys_layer_full(bool tx) {
   }
 }
 
-void pcie_ep_c::init_new_pkt(message_s* pkt, int bits, int vc_id, mem_req_s* req) {
-  pkt->m_id = ++m_unique_id;
-  pkt->m_bits = bits;
-  pkt->m_vc_id = vc_id;
-  pkt->m_req = req;
+void pcie_ep_c::init_new_msg(message_s* msg, int bits, int vc_id, mem_req_s* req) {
+  msg->m_id = ++m_unique_id;
+  msg->m_bits = bits;
+  msg->m_vc_id = vc_id;
+  msg->m_req = req;
+}
+
+bool pcie_ep_c::txvc_not_full(int channel) {
+  return (m_txvc_cap - (int)m_txvc_buff[channel].size() > 0);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -146,29 +155,21 @@ void pcie_ep_c::start_transaction() {
 
 // used for start_transaction
 bool pcie_ep_c::push_txvc(mem_req_s* mem_req) {
-  // insert to VC buffer with maximum remaining capacity
-  int max_remain_size = -1;
-  int max_remain_id = -1;
-  for (int ii = 0; ii < m_vc_cnt; ii++) {
-    int cur_remain = m_vc_cap - m_txvc_buff[ii].size();
-    if (max_remain_size < cur_remain) {
-      max_remain_size = cur_remain;
-      max_remain_id = ii;
-    }
+  message_s* new_msg;
+  int channel;
+
+  if (m_master) {
+    channel = (mem_req && mem_req->m_type == MRT_WB) ? WD_CHANNEL : WOD_CHANNEL;
+  } else {
+    channel = (mem_req != NULL) ? WD_CHANNEL : WOD_CHANNEL;
   }
 
-  // all buffers full
-  if (max_remain_id == -1) {
+  if (!txvc_not_full(channel)) { // txvc full
     return false;
-  } 
-  // found buffer to insert
-  else {
-    int vc_id = max_remain_id;
-
-    message_s* new_pkt = m_pkt_pool->acquire_entry(m_simBase);
-    init_new_pkt(new_pkt, 544, vc_id,  mem_req);
-
-    m_txvc_buff[vc_id].push_back(new_pkt);
+  } else {
+    new_msg = m_msg_pool->acquire_entry(m_simBase);
+    init_new_msg(new_msg, 544, channel, mem_req);
+    m_txvc_buff[channel].push_back(new_msg);
     return true;
   }
 }
@@ -190,7 +191,7 @@ mem_req_s* pcie_ep_c::pull_rxvc() {
     }
     // not empty 
     else {
-      int remain = m_vc_cap - (int)m_rxvc_buff[ii].size();
+      int remain = m_rxvc_cap - (int)m_rxvc_buff[ii].size();
       candidate.push_back({remain, ii});
     }
   }
@@ -210,7 +211,7 @@ mem_req_s* pcie_ep_c::pull_rxvc() {
       assert(pkt->m_req);
 
       mem_req_s* mem_req = pkt->m_req;
-      m_pkt_pool->release_entry(pkt);
+      m_msg_pool->release_entry(pkt);
       return mem_req;
     }
   }
