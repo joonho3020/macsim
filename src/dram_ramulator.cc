@@ -284,7 +284,8 @@ void dram_ramulator_c::receive_ramu_req(mem_req_s* req) {
       m_simBase->m_bug_detector->deallocate_noc(req);
     }
 
-    STAT_EVENT(DIMM_REQ_CNT);
+    STAT_EVENT(MEM_REQ_BASE);
+    STAT_EVENT(DIMM_REQ_RATIO);
     if (m_access_dist.find(req->m_addr) == m_access_dist.end()) {
       m_access_dist[req->m_addr] = 1;
     } else {
@@ -318,7 +319,8 @@ void dram_ramulator_c::receive_cme_req(mem_req_s* req) {
     m_simBase->m_bug_detector->deallocate_noc(req);
   }
 
-  STAT_EVENT(CME_REQ_CNT);
+  STAT_EVENT(MEM_REQ_BASE);
+  STAT_EVENT(CME_REQ_RATIO);
   if (m_access_dist.find(req->m_addr) == m_access_dist.end()) {
     m_access_dist[req->m_addr] = 1;
   } else {

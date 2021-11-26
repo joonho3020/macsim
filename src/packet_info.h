@@ -46,6 +46,16 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "global_defs.h"
 #include "global_types.h"
 
+typedef enum MSG_TYPE {
+  M2S_REQ = 0,
+  M2S_RWD,
+  M2S_DATA,
+  S2M_NDR,
+  S2M_DRS,
+  S2M_DATA,
+  INVALID
+} MSG_TYPE;
+
 typedef struct message_s {
   /**
    * Constructor
@@ -55,11 +65,17 @@ typedef struct message_s {
   void print(void);
 
   int m_id; /**< unique request id */
+  int m_bits;
+  MSG_TYPE m_type;
 
   bool m_data;
   message_s* m_parent;
   list<message_s*> m_childs;
   int m_arrived_child;
+
+  Counter m_txvc_start;
+  Counter m_txdll_start;
+  Counter m_rxvc_start;
 
   Counter m_txtrans_end;
   Counter m_rxtrans_end;  /**< rxlogic finished cycle */

@@ -48,11 +48,17 @@ message_s::message_s(macsim_c* simBase) {
 
 void message_s::init(void) {
   m_id = 0;
+  m_bits = 0;
+  m_type = INVALID;
 
   m_data = false;
   m_parent = NULL;
   m_childs.clear();
   m_arrived_child = 0;
+
+  m_txvc_start = 0;
+  m_txdll_start = 0;
+  m_rxvc_start = 0;
 
   m_txtrans_end = 0;
   m_rxtrans_end = 0;

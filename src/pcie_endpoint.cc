@@ -163,6 +163,44 @@ void pcie_ep_c::init_new_msg(message_s* msg, int vc_id, mem_req_s* req) {
   msg->m_id = ++m_msg_uid;
   msg->m_vc_id = vc_id;
   msg->m_req = req;
+
+  if (m_master) {
+    switch (vc_id) {
+      case WOD_CHANNEL:
+        msg->m_type = M2S_REQ;
+        msg->m_bits = *KNOB(KNOB_PCIE_REQ_MSG_BITS);
+        break;
+      case WD_CHANNEL:
+        msg->m_type = M2S_RWD;
+        msg->m_bits = *KNOB(KNOB_PCIE_RWD_MSG_BITS);
+        break;
+      case DATA_CHANNEL:
+        msg->m_type = M2S_DATA;
+        msg->m_bits = *KNOB(KNOB_PCIE_DATA_MSG_BITS);
+        break;
+      default:
+        assert(0);
+        break;
+    }
+  } else {
+    switch (vc_id) {
+      case WOD_CHANNEL:
+        msg->m_type = S2M_NDR;
+        msg->m_bits = *KNOB(KNOB_PCIE_NDR_MSG_BITS);
+        break;
+      case WD_CHANNEL:
+        msg->m_type = S2M_DRS;
+        msg->m_bits = *KNOB(KNOB_PCIE_DRS_MSG_BITS);
+        break;
+      case DATA_CHANNEL:
+        msg->m_type = S2M_DATA;
+        msg->m_bits = *KNOB(KNOB_PCIE_DATA_MSG_BITS);
+        break;
+      default:
+        assert(0);
+        break;
+    }
+  }
 }
 
 void pcie_ep_c::init_new_flit(flit_s* flit, int bits) {
@@ -176,17 +214,32 @@ bool pcie_ep_c::txvc_not_full(int channel) {
 }
 
 void pcie_ep_c::parse_and_insert_flit(flit_s* flit) {
+  Counter rxdll_start = flit->m_phys_end;
+
   for (auto msg : flit->m_msgs) {
     if (msg->m_data) {
       assert(msg->m_parent);
       msg->m_parent->m_arrived_child++;
-      // add assertion that parent arrived
+
+      // for stats
+      msg->m_rxvc_start = m_cycle;
+
+      // update stats
+      STAT_EVENT(PCIE_RXDLL_BASE);
+      STAT_EVENT_N(AVG_PCIE_RXDLL_LATENCY, m_cycle - rxdll_start);
     } else {
       int vc_id = msg->m_vc_id;
       assert(m_rxvc_cap > (int)m_rxvc_buff[vc_id].size()); // flow control
 
       msg->m_rxtrans_end = m_cycle + *KNOB(KNOB_PCIE_RXTRANS_LATENCY);
       m_rxvc_buff[vc_id].push_back(msg);
+
+      // for stats
+      msg->m_rxvc_start = m_cycle;
+
+      // update stats
+      STAT_EVENT(PCIE_RXDLL_BASE);
+      STAT_EVENT_N(AVG_PCIE_RXDLL_LATENCY, m_cycle - rxdll_start);
     }
   }
   flit->init();
@@ -218,11 +271,13 @@ void pcie_ep_c::add_and_push_data_msg(message_s* msg) {
     message_s* new_data_msg = m_msg_pool->acquire_entry(m_simBase);
 
     init_new_msg(new_data_msg, DATA_CHANNEL, NULL);
+
     new_data_msg->m_data = true;
     new_data_msg->m_parent = msg;
     new_data_msg->m_txtrans_end = m_cycle + *KNOB(KNOB_PCIE_TXTRANS_LATENCY);
-    msg->m_childs.push_back(new_data_msg);
+    new_data_msg->m_txdll_start = m_cycle;
 
+    msg->m_childs.push_back(new_data_msg);
     m_txdll_q.push_back(new_data_msg);
 
     assert(msg != new_data_msg);
@@ -257,6 +312,9 @@ bool pcie_ep_c::push_txvc(mem_req_s* mem_req) {
     new_msg = m_msg_pool->acquire_entry(m_simBase);
     init_new_msg(new_msg, channel, mem_req);
     m_txvc_buff[channel].push_back(new_msg);
+
+    // for stats
+    new_msg->m_txvc_start = m_cycle;
     return true;
   }
 }
@@ -306,11 +364,20 @@ mem_req_s* pcie_ep_c::pull_rxvc() {
 
       if (is_wdata_msg(msg)) {
         assert((int)msg->m_childs.size() != 0);
+
         for (auto child : msg->m_childs) {
+          // update stats
+          STAT_EVENT(PCIE_RXTRANS_BASE);
+          STAT_EVENT_N(AVG_PCIE_RXTRANS_LATENCY, m_cycle - child->m_rxvc_start);
+
           child->init();
           m_msg_pool->release_entry(child);
         }
       }
+      // update stats
+      STAT_EVENT(PCIE_RXTRANS_BASE);
+      STAT_EVENT_N(AVG_PCIE_RXTRANS_LATENCY, m_cycle - msg->m_rxvc_start);
+
       msg->init();
       m_msg_pool->release_entry(msg);
 
@@ -343,6 +410,13 @@ void pcie_ep_c::process_txtrans() {
           msg->m_txtrans_end = m_cycle + *KNOB(KNOB_PCIE_TXTRANS_LATENCY);
           m_txvc_buff[vc_id].pop_front();
           m_txdll_q.push_back(msg);
+
+          // for stats
+          msg->m_txdll_start = m_cycle;
+
+          // update tx trans latency related stats
+          STAT_EVENT(PCIE_TXTRANS_BASE);
+          STAT_EVENT_N(AVG_PCIE_TXTRANS_LATENCY, m_cycle - msg->m_txvc_start);
 
           // if this message is a req/resp with data, add child data messages
           // and push them to the m_txdll_q as well
@@ -396,6 +470,7 @@ void pcie_ep_c::process_txdll() {
     }
   }
 
+  // insert to replay buffer
   if (new_flit) {
     new_flit->m_txdll_end = m_cycle + *KNOB(KNOB_PCIE_TXDLL_LATENCY);
     m_txreplay_buff.push_back(new_flit);
@@ -425,6 +500,26 @@ void pcie_ep_c::process_txphys() {
 
         // push to peer endpoint physical
         m_peer_ep->insert_phys(cur_flit);
+
+        // update dll stats
+        for (auto msg : cur_flit->m_msgs) {
+          STAT_EVENT(PCIE_TXDLL_BASE);
+          STAT_EVENT_N(AVG_PCIE_TXDLL_LATENCY, m_cycle - msg->m_txdll_start);
+        }
+
+        // update goodput related stats
+        int good_bits = 0;
+        for (auto msg : cur_flit->m_msgs) {
+          good_bits += msg->m_bits;
+        }
+        STAT_EVENT_N(PCIE_GOODPUT_BASE, *KNOB(KNOB_PCIE_FLIT_BITS));
+        STAT_EVENT_N(AVG_PCIE_GOODPUT, good_bits);
+
+        // update phys latency related stats
+        STAT_EVENT(PCIE_FLIT_BASE);
+        STAT_EVENT_N(AVG_PCIE_PHYS_LATENCY, phys_finished - cur_flit->m_txdll_end);
+
+        break;
       }
     }
   }
