@@ -270,6 +270,7 @@ void pcie_ep_c::end_transaction() {
 
 // used for end_transaction
 mem_req_s* pcie_ep_c::pull_rxvc() {
+  // choose the vc buffer with minimum free space left
   vector<pair<int, int>> candidate;
   for (int ii = 0; ii < m_vc_cnt; ii++) {
     // empty
@@ -343,6 +344,8 @@ void pcie_ep_c::process_txtrans() {
           m_txvc_buff[vc_id].pop_front();
           m_txdll_q.push_back(msg);
 
+          // if this message is a req/resp with data, add child data messages
+          // and push them to the m_txdll_q as well
           if (is_wdata_msg(msg)) {
             add_and_push_data_msg(msg);
           }
