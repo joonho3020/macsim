@@ -85,6 +85,8 @@ void pcie_rc_c::start_transaction() {
 }
 
 void pcie_rc_c::end_transaction() {
+  // FIXME : when cxlt3_c sends a NDR, the req is NULL,
+  // breaking the loop even though pending DRS can be pulled
   while (1) {
     mem_req_s* req = pull_rxvc();
     if (!req) {

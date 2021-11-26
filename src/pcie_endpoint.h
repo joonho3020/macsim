@@ -103,7 +103,7 @@ private:
   bool txvc_not_full(int channel);
   void parse_and_insert_flit(flit_s* flit);
 
-  void refresh_replay_buffer();
+  void refresh_replay_buffer(void);
 
 protected:
   /**

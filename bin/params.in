@@ -143,7 +143,7 @@ noc_dimension 2
 
 # CXL
 cme_enable 1
-cme_addr_min 139637976727552
+cme_addr_min 0
 
 pcie_lanes 16
 pcie_per_lane_bw 32

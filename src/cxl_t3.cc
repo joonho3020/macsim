@@ -113,9 +113,18 @@ void cxlt3_c::run_a_cycle_internal(bool pll_locked) {
 void cxlt3_c::start_transaction() {
   for (auto I = cme_resp_queue.begin(); I != cme_resp_queue.end(); ++I) {
     mem_req_s* req = *I;
+
+    // free write requests here
+    if (req->m_type == MRT_WB) {
+      MEMORY->free_req(req->m_core_id, req);
+      req = NULL;
+    }
+
     if (push_txvc(req)) {
       cme_resp_queue.pop_front();
-      req->m_state = CME_PCIE_RETURNING;
+      if (req) {
+        req->m_state = CME_PCIE_RETURNING;
+      }
     } else {
       break;
     }
@@ -171,7 +180,6 @@ bool cxlt3_c::push_ramu_req(mem_req_s* req) {
     // added counter to track requests in flight
     ++cme_requestsInFlight;
     req->m_state = CME_REQ_START;
-
     return true;
   } else {
     if (is_write) {
@@ -218,7 +226,7 @@ void cxlt3_c::writeComplete(ramulator::Request &ramu_req) {
 
   // in case of WB, retire requests here
   DEBUG("Retiring request for address 0x%lx\n", ramu_req.addr);
-  MEMORY->free_req(req->m_core_id, req);
+  cme_resp_queue.push_back(req);
 }
 
 void cxlt3_c::print_cxlt3_info() {

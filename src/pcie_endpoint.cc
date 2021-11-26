@@ -178,6 +178,8 @@ void pcie_ep_c::refresh_replay_buffer() {
     // if the flit is send && the flit is received by the peer
     if (flit->m_phys_sent && flit->m_phys_end <= m_cycle) {
       m_txreplay_buff.pop_front();
+    } else {
+      break;
     }
   }
 }
@@ -247,7 +249,7 @@ mem_req_s* pcie_ep_c::pull_rxvc() {
       continue;
     } else {
       assert(msg->m_vc_id == vc_id);
-      assert(msg->m_req);
+/* assert(msg->m_req); */
 
       mem_req_s* mem_req = msg->m_req;
       msg->init();
@@ -329,26 +331,25 @@ void pcie_ep_c::process_txphys() {
   // pop replay buffer entries that the peers received
   refresh_replay_buffer();
 
-  while (!m_peer_ep->phys_layer_full() && !m_txreplay_buff.empty()) {
-    flit_s* cur_flit = m_txreplay_buff.front();
+  if (!m_peer_ep->phys_layer_full()) {
+    for (auto cur_flit : m_txreplay_buff) {
+      if (cur_flit->m_phys_sent) {
+        continue;
+      } else if (cur_flit->m_txdll_end <= m_cycle) {
+        // - packets are sent serially so transmission starts only after
+        //   the previous packet finished physical layer transmission
+        Counter lat = get_phys_latency(cur_flit);
+        Counter start_cyc = max(m_prev_txphys_cycle, m_cycle);
+        Counter phys_finished = start_cyc + lat;
 
-    if (cur_flit->m_phys_sent) {
-      continue;
-    } else if ((cur_flit->m_txdll_end <= m_cycle)) {
-      // - packets are sent serially so transmission starts only after
-      //   the previous packet finished physical layer transmission
-      Counter lat = get_phys_latency(cur_flit);
-      Counter start_cyc = max(m_prev_txphys_cycle, m_cycle);
-      Counter phys_finished = start_cyc + lat;
+        m_prev_txphys_cycle = phys_finished;
+        cur_flit->m_phys_end = phys_finished;
+        cur_flit->m_rxdll_end = phys_finished + *KNOB(KNOB_PCIE_RXDLL_LATENCY);
+        cur_flit->m_phys_sent = true;
 
-      m_prev_txphys_cycle = phys_finished;
-      cur_flit->m_phys_end = phys_finished;
-      cur_flit->m_rxdll_end = phys_finished + *KNOB(KNOB_PCIE_RXDLL_LATENCY);
-
-      cur_flit->m_phys_sent = true;
-
-      // push to peer endpoint physical
-      m_peer_ep->insert_phys(cur_flit);
+        // push to peer endpoint physical
+        m_peer_ep->insert_phys(cur_flit);
+      }
     }
   }
 }
