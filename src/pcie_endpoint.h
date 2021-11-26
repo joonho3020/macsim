@@ -50,6 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define WOD_CHANNEL 0
 #define WD_CHANNEL 1
+#define DATA_CHANNEL 2
 
 class pcie_ep_c {
 public:
@@ -97,13 +98,16 @@ private:
 
   bool dll_layer_full(bool tx);
 
-  void init_new_msg(message_s* pkt, int vc_id, mem_req_s* req);
+  void init_new_msg(message_s* msg, int vc_id, mem_req_s* req);
   void init_new_flit(flit_s* flit, int bits);
 
   bool txvc_not_full(int channel);
   void parse_and_insert_flit(flit_s* flit);
 
   void refresh_replay_buffer(void);
+
+  bool is_wdata_msg(message_s* msg);
+  void add_and_push_data_msg(message_s* msg);
 
 protected:
   /**

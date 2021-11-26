@@ -35,7 +35,9 @@ POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************************************/
 
 #include <iostream>
+#include <string>
 
+#include "pcie_endpoint.h"
 #include "packet_info.h"
 #include "memreq_info.h"
 
@@ -46,17 +48,28 @@ message_s::message_s(macsim_c* simBase) {
 
 void message_s::init(void) {
   m_id = 0;
+
+  m_data = false;
+  m_parent = NULL;
+  m_childs.clear();
+  m_arrived_child = 0;
+
   m_txtrans_end = 0;
   m_rxtrans_end = 0;
+
   m_vc_id = -1;
   m_req = NULL;
 }
 
 void message_s::print(void) {
   Addr addr = m_req ? m_req->m_addr : 0x00;
-  
+  std::string msg_type = m_data ? "DATA" 
+                                : (m_vc_id == WD_CHANNEL) ? "WDATA"
+                                                          : "WODATA";
+
   std::cout << "= <MSG> addr: " << std::hex << addr
-                << " channel: " << std::dec << m_vc_id << std::endl;
+                << " channel: " << msg_type
+                << std::endl;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -70,9 +83,11 @@ void flit_s::init(void) {
   m_id = 0;
   m_bits = 0;
   m_phys_sent = false;
+
   m_txdll_end = 0;
   m_phys_end = 0;
   m_rxdll_end = 0;
+
   m_msgs.clear();
 }
 

@@ -56,3 +56,4 @@ param<PCIE_RXDLL_LATENCY, pcie_rxdll_latency, uint64_t, 5>
 /* Flit related */
 param<PCIE_MAX_MSG_PER_FLIT, pcie_max_msg_per_flit, int, 4>
 param<PCIE_FLIT_BITS, pcie_flit_bits, int, 544>
+param<PCIE_DATA_SLOTS_PER_FLIT, pcie_data_slots_per_flit, int, 4>

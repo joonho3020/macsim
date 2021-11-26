@@ -165,6 +165,7 @@ pcie_rxdll_latency 1
 
 pcie_max_msg_per_flit 4
 pcie_flit_bits 528
+pcie_data_slots_per_flit 4
 
 # ETC
 bug_detector_enable 1

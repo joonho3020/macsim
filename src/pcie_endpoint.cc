@@ -152,23 +152,23 @@ Counter pcie_ep_c::get_phys_latency(flit_s* flit) {
 
 bool pcie_ep_c::dll_layer_full(bool tx) {
   if (tx) {
-    return (m_txdll_cap == (int)m_txdll_q.size());
+    return (m_txdll_cap <= (int)m_txdll_q.size());
   } else {
     assert(0);
   }
 }
 
 void pcie_ep_c::init_new_msg(message_s* msg, int vc_id, mem_req_s* req) {
+  msg->init();
   msg->m_id = ++m_msg_uid;
   msg->m_vc_id = vc_id;
   msg->m_req = req;
 }
 
 void pcie_ep_c::init_new_flit(flit_s* flit, int bits) {
+  flit->init();
   flit->m_id = ++m_flit_uid;
   flit->m_bits = bits;
-  flit->m_phys_end = 0;
-  flit->m_msgs.clear();
 }
 
 bool pcie_ep_c::txvc_not_full(int channel) {
@@ -177,11 +177,17 @@ bool pcie_ep_c::txvc_not_full(int channel) {
 
 void pcie_ep_c::parse_and_insert_flit(flit_s* flit) {
   for (auto msg : flit->m_msgs) {
-    int vc_id = msg->m_vc_id;
-    assert(m_rxvc_cap > (int)m_rxvc_buff[vc_id].size()); // flow control
+    if (msg->m_data) {
+      assert(msg->m_parent);
+      msg->m_parent->m_arrived_child++;
+      // add assertion that parent arrived
+    } else {
+      int vc_id = msg->m_vc_id;
+      assert(m_rxvc_cap > (int)m_rxvc_buff[vc_id].size()); // flow control
 
-    msg->m_rxtrans_end = m_cycle + *KNOB(KNOB_PCIE_RXTRANS_LATENCY);
-    m_rxvc_buff[vc_id].push_back(msg);
+      msg->m_rxtrans_end = m_cycle + *KNOB(KNOB_PCIE_RXTRANS_LATENCY);
+      m_rxvc_buff[vc_id].push_back(msg);
+    }
   }
   flit->init();
   m_flit_pool->release_entry(flit);
@@ -197,6 +203,30 @@ void pcie_ep_c::refresh_replay_buffer() {
     } else {
       break;
     }
+  }
+}
+
+bool pcie_ep_c::is_wdata_msg(message_s* msg) {
+  return (msg->m_vc_id == WD_CHANNEL);
+}
+
+void pcie_ep_c::add_and_push_data_msg(message_s* msg) {
+  assert(msg->m_req);
+  int data_slots = *KNOB(KNOB_PCIE_DATA_SLOTS_PER_FLIT);
+
+  for (int ii = 0; ii < data_slots; ii++) {
+    message_s* new_data_msg = m_msg_pool->acquire_entry(m_simBase);
+
+    init_new_msg(new_data_msg, DATA_CHANNEL, NULL);
+    new_data_msg->m_data = true;
+    new_data_msg->m_parent = msg;
+    new_data_msg->m_txtrans_end = m_cycle + *KNOB(KNOB_PCIE_TXTRANS_LATENCY);
+    msg->m_childs.push_back(new_data_msg);
+
+    m_txdll_q.push_back(new_data_msg);
+
+    assert(msg != new_data_msg);
+    assert(new_data_msg->m_childs.size() == 0);
   }
 }
 
@@ -259,17 +289,30 @@ mem_req_s* pcie_ep_c::pull_rxvc() {
     int vc_id = cand.second;
 
     message_s* msg = m_rxvc_buff[vc_id].front();
-    m_rxvc_buff[vc_id].pop_front();
 
     if (msg->m_rxtrans_end > m_cycle) {
       continue;
     } else {
+      if (is_wdata_msg(msg) && 
+          msg->m_arrived_child != *KNOB(KNOB_PCIE_MAX_MSG_PER_FLIT)) {
+        continue;
+      }
+
+      m_rxvc_buff[vc_id].pop_front();
       assert(msg->m_vc_id == vc_id);
-/* assert(msg->m_req); */
 
       mem_req_s* mem_req = msg->m_req;
+
+      if (is_wdata_msg(msg)) {
+        assert((int)msg->m_childs.size() != 0);
+        for (auto child : msg->m_childs) {
+          child->init();
+          m_msg_pool->release_entry(child);
+        }
+      }
       msg->init();
       m_msg_pool->release_entry(msg);
+
       return mem_req;
     }
   }
@@ -299,6 +342,10 @@ void pcie_ep_c::process_txtrans() {
           msg->m_txtrans_end = m_cycle + *KNOB(KNOB_PCIE_TXTRANS_LATENCY);
           m_txvc_buff[vc_id].pop_front();
           m_txdll_q.push_back(msg);
+
+          if (is_wdata_msg(msg)) {
+            add_and_push_data_msg(msg);
+          }
           break;
         }
       }
