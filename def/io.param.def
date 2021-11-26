@@ -52,7 +52,7 @@ param<PCIE_TXTRANS_LATENCY, pcie_txtrans_latency, uint64_t, 5>
 param<PCIE_TXDLL_LATENCY, pcie_txdll_latency, uint64_t, 5>
 param<PCIE_RXTRANS_LATENCY, pcie_rxtrans_latency, uint64_t, 5>
 param<PCIE_RXDLL_LATENCY, pcie_rxdll_latency, uint64_t, 5>
-param<PCIE_ARBMUX_LATENCY, pcie_arbmuax_latency, uint64_t, 2>
+param<PCIE_ARBMUX_LATENCY, pcie_arbmux_latency, uint64_t, 2>
 
 /* Flit related */
 param<PCIE_MAX_MSG_PER_FLIT, pcie_max_msg_per_flit, int, 4>
