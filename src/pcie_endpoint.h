@@ -93,6 +93,7 @@ private:
    */
   Counter get_phys_latency(message_s* pkt);
 
+  bool dll_layer_full(bool tx);
   bool phys_layer_full(bool tx);
 
   void init_new_msg(message_s* pkt, int bits, int vc_id, mem_req_s* req);
@@ -147,6 +148,9 @@ private:
   int m_rxvc_cap; /**< VC buffer capacity */
   list<message_s*>* m_txvc_buff; /**< buffer of TX VC */
   list<message_s*>* m_rxvc_buff; /**< buffer of RX VC */
+
+  int m_txdll_cap;
+  list<message_s*> m_txdll_q;
 
   int m_phys_cap; /**< maximum numbers of packets in physical layer q */
   list<message_s*> m_txphys_q; /**< physical layer send queue */

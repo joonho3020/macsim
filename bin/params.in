@@ -152,7 +152,8 @@ pcie_vc_cnt 2
 pcie_txvc_capacity 8
 pcie_rxvc_capacity 8
 pcie_phys_capacity 8
-pcie_txlogic_latency 10
+pcie_txdll_capacity 8
+pcie_txtrans_latency 10
 pcie_rxlogic_latency 10
 
 # ETC

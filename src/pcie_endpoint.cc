@@ -63,12 +63,17 @@ pcie_ep_c::pcie_ep_c(macsim_c* simBase) {
 
   // initialize VC buffers & credit
   m_vc_cnt = *KNOB(KNOB_PCIE_VC_CNT);
+
   m_txvc_cap = *KNOB(KNOB_PCIE_TXVC_CAPACITY);
   m_rxvc_cap = *KNOB(KNOB_PCIE_RXVC_CAPACITY);
   m_txvc_buff = new list<message_s*>[m_vc_cnt];
   m_rxvc_buff = new list<message_s*>[m_vc_cnt];
 
   ASSERTM(m_vc_cnt == 2, "currently only 2 virtual channels exist\n");
+
+
+  // initialize dll
+  m_txdll_cap = *KNOB(KNOB_PCIE_TXDLL_CAPACITY);
 
   // initialize physical layers
   m_phys_cap = *KNOB(KNOB_PCIE_PHYS_CAPACITY);
@@ -122,6 +127,14 @@ bool pcie_ep_c::check_peer_credit(message_s* pkt) {
 Counter pcie_ep_c::get_phys_latency(message_s* pkt) {
   float freq = *KNOB(KNOB_CLOCK_IO);
   return static_cast<Counter>(pkt->m_bits / m_perlane_bw * freq);
+}
+
+bool pcie_ep_c::dll_layer_full(bool tx) {
+  if (tx) {
+    return (m_txdll_cap == (int)m_txdll_q.size());
+  } else {
+    assert(0);
+  }
 }
 
 bool pcie_ep_c::phys_layer_full(bool tx) {
@@ -230,17 +243,17 @@ void pcie_ep_c::process_txtrans() {
     }
     // VC buffer not empty
     else {
-      message_s* pkt = m_txvc_buff[ii].front();
-      int vc_id = pkt->m_vc_id;
+      message_s* msg = m_txvc_buff[ii].front();
+      int vc_id = msg->m_vc_id;
 
       // don't consider about flow control packets now
-      if (!check_peer_credit(pkt)) {
+      if (!check_peer_credit(msg)) {
         continue;
       } else {
-        if (!phys_layer_full(TX)) {
-          pkt->m_txtrans_end = m_cycle + *KNOB(KNOB_PCIE_TXLOGIC_LATENCY);
+        if (!dll_layer_full(TX)) {
+          msg->m_txtrans_end = m_cycle + *KNOB(KNOB_PCIE_TXTRANS_LATENCY);
           m_txvc_buff[vc_id].pop_front();
-          m_txphys_q.push_back(pkt);
+          m_txdll_q.push_back(msg);
           break;
         }
       }
@@ -250,11 +263,25 @@ void pcie_ep_c::process_txtrans() {
 }
 
 void pcie_ep_c::process_txdll() {
-  return;
+  if ((int)m_txdll_q.size() == 0) {
+    return;
+  }
+
+  message_s* msg = m_txdll_q.front();
+
+  if (msg->m_txtrans_end > m_cycle) { // msg not ready
+    return;
+  } else if (phys_layer_full(TX)) { // phys layer full
+    return;
+  } else { // msg ready && phys layer ready
+    m_txdll_q.pop_front();
+    m_txphys_q.push_back(msg);
+    return;
+  }
 }
 
 void pcie_ep_c::process_txphys() {
-  if (m_txphys_q.size() == 0) {
+  if ((int)m_txphys_q.size() == 0) {
     return;
   }
 
