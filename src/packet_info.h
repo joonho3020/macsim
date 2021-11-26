@@ -69,6 +69,7 @@ typedef struct flit_s {
 
   int m_id;
   int m_bits;
+  bool m_phys_sent;
   Counter m_txdll_end;
   Counter m_phys_end;
   Counter m_rxdll_end;

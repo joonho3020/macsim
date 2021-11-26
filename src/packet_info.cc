@@ -69,6 +69,7 @@ flit_s::flit_s(macsim_c* simBase) {
 void flit_s::init(void) {
   m_id = 0;
   m_bits = 0;
+  m_phys_sent = false;
   m_txdll_end = 0;
   m_phys_end = 0;
   m_rxdll_end = 0;

@@ -103,6 +103,8 @@ private:
   bool txvc_not_full(int channel);
   void parse_and_insert_flit(flit_s* flit);
 
+  void refresh_replay_buffer();
+
 protected:
   /**
    * Start PCIe transaction by inserting requests
