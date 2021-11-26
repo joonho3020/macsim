@@ -177,7 +177,7 @@ void pcie_ep_c::refresh_replay_buffer() {
 
     // if the flit is send && the flit is received by the peer
     if (flit->m_phys_sent && flit->m_phys_end <= m_cycle) {
-      m_txreplay_buffer.pop_front();
+      m_txreplay_buff.pop_front();
     }
   }
 }
