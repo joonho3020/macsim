@@ -53,47 +53,29 @@ pcie_ep_c::pcie_ep_c(macsim_c* simBase) {
   m_cycle = 0;
 
   // set memory request size
-  m_memreq_size = *KNOB(KNOB_PCIE_MEMREQ_BYTES);
-  m_rr_idx = 0;
   m_lanes = *KNOB(KNOB_PCIE_LANES);
   m_perlane_bw = *KNOB(KNOB_PCIE_PER_LANE_BW);
   m_prev_txphys_cycle = 0;
   m_peer_ep = NULL;
 
+  m_txvc_rr_idx = 0;
+
   // initialize VC buffers & credit
   m_vc_cnt = *KNOB(KNOB_PCIE_VC_CNT);
   m_vc_cap = *KNOB(KNOB_PCIE_VC_CAPACITY);
-  m_txvc_size = new int[m_vc_cnt];
-  m_rxvc_size = new int[m_vc_cnt];
-  for (int ii = 0; ii < m_vc_cnt; ii++) {
-    m_txvc_size[ii] = m_vc_cap;
-    m_rxvc_size[ii] = m_vc_cap;
-  }
-  m_txvc_buff = new list<msg_s*>[m_vc_cnt];
-  m_rxvc_buff = new list<msg_s*>[m_vc_cnt];
-
-  // initialize credit
-  m_credit_cap = m_vc_cap;  // credit = pair's vc capacity
-  m_credit = new int[m_vc_cnt];
-  for (int ii = 0; ii < m_vc_cnt; ii++) {
-    m_credit[ii] = m_vc_cap;
-  }
+  m_txvc_buff = new list<message_s*>[m_vc_cnt];
+  m_rxvc_buff = new list<message_s*>[m_vc_cnt];
 
   // initialize physical layers
   m_phys_cap = *KNOB(KNOB_PCIE_PHYS_CAPACITY);
-  m_txphys_q = new list<msg_s*>();
-  m_rxphys_q = new list<msg_s*>();
 }
 
 pcie_ep_c::~pcie_ep_c() {
   delete[] m_txvc_buff;
   delete[] m_rxvc_buff;
-  delete m_txphys_q;
-  delete m_rxphys_q;
 }
 
-void pcie_ep_c::init(int id, pool_c<msg_s>* pkt_pool, 
-    pcie_ep_c* peer) {
+void pcie_ep_c::init(int id, pool_c<message_s>* pkt_pool, pcie_ep_c* peer) {
   m_id = id;
   m_pkt_pool = pkt_pool;
   m_peer_ep = peer;
@@ -102,25 +84,58 @@ void pcie_ep_c::init(int id, pool_c<msg_s>* pkt_pool,
 void pcie_ep_c::run_a_cycle(bool pll_locked) {
   // receive requests
   end_transaction();
-  process_rxlogic();
+  process_rxtrans();
+  process_rxdll();
   process_rxphys();
 
   // send requests
   process_txphys();
-  process_txlogic();
+  process_txdll();
+  process_txtrans();
   start_transaction();
 
   m_cycle++;
 }
 
-bool pcie_ep_c::insert_rxphys(msg_s* pkt) {
-  if (m_rxphys_q->size() >= m_rxphys_size) {
+bool pcie_ep_c::insert_rxphys(message_s* pkt) {
+  if ((int)m_rxphys_q.size() >= m_phys_cap) {
     return false;
   } else {
-    m_rxphys_q->push_back(pkt);
+    m_rxphys_q.push_back(pkt);
     return true;
   }
 }
+
+bool pcie_ep_c::check_peer_credit(message_s* pkt) {
+  int vc_id = pkt->m_vc_id;
+  return (m_peer_ep->m_rxvc_buff[vc_id].size() < m_peer_ep->m_vc_cap);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// private
+
+Counter pcie_ep_c::get_phys_latency(message_s* pkt) {
+  float freq = *KNOB(KNOB_CLOCK_IO);
+  return static_cast<Counter>(pkt->m_bits / m_perlane_bw * freq);
+}
+
+bool pcie_ep_c::phys_layer_full(bool tx) {
+  if (tx) {
+    return (m_phys_cap == (int)m_txphys_q.size());
+  } else { // rx
+    return (m_phys_cap == (int)m_rxphys_q.size());
+  }
+}
+
+void pcie_ep_c::init_new_pkt(message_s* pkt, int bits, int vc_id, mem_req_s* req) {
+  pkt->m_id = ++m_unique_id;
+  pkt->m_bits = bits;
+  pkt->m_vc_id = vc_id;
+  pkt->m_req = req;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// protected
 
 // virtual class
 // should call push_txvc internally
@@ -129,134 +144,13 @@ void pcie_ep_c::start_transaction() {
   return;
 }
 
-// virtual class
-// should call pull_rxvc internally
-// look at pcie_rc_c, cxl_t3_c for examples
-void pcie_ep_c::end_transaction() {
-  return;
-}
-
-void pcie_ep_c::process_txlogic() {
-  // round robin policy
-  for (int ii = m_rr_idx, cnt = 0; cnt < m_vc_cnt; 
-      cnt++, ii = (ii + 1)  % m_vc_cnt) {
-    // VC buffer emtpy
-    if (m_txvc_buff[ii].empty()) {
-      continue;
-    }
-    // VC buffer not empty
-    else {
-      bool is_tx = true;
-      msg_s* pkt = m_txvc_buff[ii].front();
-
-      // don't consider about flow control packets now
-      if (!check_credit(pkt)) {
-        continue;
-      } else {
-        if (!phys_layer_full(is_tx)) {
-          decrease_credit(pkt);
-          pkt->m_logic_end = m_cycle + *KNOB(KNOB_PCIE_TXLOGIC_LATENCY);
-          pull_vc_buffer(pkt->m_vc_id, m_txvc_size, m_txvc_buff);
-          insert_tx_phys(pkt, false);  // insert to back
-          break;
-        }
-      }
-    }
-  }
-  m_rr_idx = (m_rr_idx + 1) % m_vc_cnt;
-}
-
-void pcie_ep_c::process_txphys() {
-  if (m_txphys_q->size() == 0) {
-    return;
-  }
-
-  msg_s* pkt = m_txphys_q->front();
-
-  if (pkt->m_logic_end > m_cycle) {
-    return;
-  } else {
-    // insert the packet to peer's receive phys q
-    if (m_peer_ep->insert_rxphys(pkt)) {
-      m_txphys_q->pop_front();
-
-      // - packets are sent serially so transmission starts only after
-      //   the previsou packet finished physical layer transmission
-      Counter lat = get_phys_latency(pkt);
-      pkt->m_phys_start = max(m_prev_txphys_cycle, m_cycle);
-      Counter phys_finished = pkt->m_phys_start + lat;
-      m_prev_txphys_cycle = phys_finished;
-
-      // - instead of modeling the rx logic layer latency separately,
-      //   just add the latency here and skip process_rxlogic
-      pkt->m_rxlogic_finished = phys_finished + 
-        *KNOB(KNOB_PCIE_RXLOGIC_LATENCY);
-    }
-  }
-}
-
-void pcie_ep_c::process_rxphys() {
-  while (m_rxphys_q->size()) {
-    msg_s* pkt = m_rxphys_q->front();
-
-    // finished physical layer & rx logic layer
-    if (pkt->m_rxlogic_finished <= m_cycle) {
-      assert(m_rxvc_size[pkt->m_vc_id] >= pkt->m_bytes);
-      m_rxphys_q->pop_front();
-      insert_vc_buff(pkt->m_vc_id, m_rxvc_size, m_rxvc_buff, pkt);
-    } else {
-      break;
-    }
-  }
-}
-
-void pcie_ep_c::process_rxlogic() {
-  // skip since the latency is considered in process_txphys
-}
-
-Counter pcie_ep_c::get_phys_latency(msg_s* pkt) {
-  return static_cast<Counter>(pkt->m_bytes * m_perlane_bw / m_lanes);
-}
-
-void pcie_ep_c::decrease_credit(msg_s* flow_pkt) {
-  m_credit[flow_pkt->m_vc_id] -= flow_pkt->m_bytes;
-}
-
-void pcie_ep_c::update_credit(msg_s* fctrl_pkt) {
-  m_credit[fctrl_pkt->m_vc_id] = fctrl_pkt->m_credits;
-}
-
-void pcie_ep_c::update_credit(int vc_id, int credit) {
-  m_credit[vc_id] = credit;
-}
-
-bool pcie_ep_c::check_credit(msg_s* pkt) {
-  return pkt->m_bytes <= m_credit[pkt->m_vc_id];
-}
-
-bool pcie_ep_c::phys_layer_full(bool tx) {
-  if (tx) {
-    return m_txphys_q->size() >= m_txphys_size;
-  } else { // rx
-    return m_rxphys_q->size() >= m_rxphys_size;
-  }
-}
-
-void pcie_ep_c::insert_tx_phys(msg_s* pkt, bool front) {
-  if (front) {
-    m_txphys_q->push_front(pkt);
-  } else {
-    m_txphys_q->push_back(pkt);
-  }
-}
-
 // used for start_transaction
 bool pcie_ep_c::push_txvc(mem_req_s* mem_req) {
   // insert to VC buffer with maximum remaining capacity
   int max_remain_size = -1;
   int max_remain_id = -1;
   for (int ii = 0; ii < m_vc_cnt; ii++) {
-    int cur_remain = m_txvc_size[ii] - m_memreq_size;
+    int cur_remain = m_vc_cap - m_txvc_buff[ii].size();
     if (max_remain_size < cur_remain) {
       max_remain_size = cur_remain;
       max_remain_id = ii;
@@ -270,16 +164,20 @@ bool pcie_ep_c::push_txvc(mem_req_s* mem_req) {
   // found buffer to insert
   else {
     int vc_id = max_remain_id;
-    Pkt_Type pkt_type = (mem_req->m_type == MRT_WB) ? PKT_MWR : PKT_MRD;
-    Pkt_State pkt_state = PKT_TVC;
 
-    msg_s* new_pkt = m_pkt_pool->acquire_entry(m_simBase);
-    init_new_pkt(new_pkt, m_memreq_size, vc_id, -1, 
-      pkt_type, pkt_state, mem_req);
+    message_s* new_pkt = m_pkt_pool->acquire_entry(m_simBase);
+    init_new_pkt(new_pkt, 544, vc_id,  mem_req);
 
-    insert_vc_buff(vc_id, m_txvc_size, m_txvc_buff, new_pkt);
+    m_txvc_buff[vc_id].push_back(new_pkt);
     return true;
   }
+}
+
+// virtual class
+// should call pull_rxvc internally
+// look at pcie_rc_c, cxl_t3_c for examples
+void pcie_ep_c::end_transaction() {
+  return;
 }
 
 // used for end_transaction
@@ -287,12 +185,12 @@ mem_req_s* pcie_ep_c::pull_rxvc() {
   vector<pair<int, int>> candidate;
   for (int ii = 0; ii < m_vc_cnt; ii++) {
     // empty
-    if (m_rxvc_size[ii] == m_vc_cap) {
+    if ((int)m_rxvc_buff[ii].size() == 0) {
       continue;
     }
     // not empty 
     else {
-      int remain = m_vc_cap - m_rxvc_size[ii];
+      int remain = m_vc_cap - (int)m_rxvc_buff[ii].size();
       candidate.push_back({remain, ii});
     }
   }
@@ -301,14 +199,13 @@ mem_req_s* pcie_ep_c::pull_rxvc() {
 
   for (auto cand : candidate) {
     int vc_id = cand.second;
-    msg_s* pkt = pull_vc_buffer(vc_id, m_rxvc_size, m_rxvc_buff);
 
-    if (pkt->m_rxlogic_finished > m_cycle) {
+    message_s* pkt = m_rxvc_buff[vc_id].front();
+    m_rxvc_buff[vc_id].pop_front();
+
+    if (pkt->m_rxtrans_end > m_cycle) {
       continue;
     } else {
-      // update peer endpoint credit
-      m_peer_ep->update_credit(vc_id, m_rxvc_size[vc_id]);
-
       assert(pkt->m_vc_id == vc_id);
       assert(pkt->m_req);
 
@@ -320,58 +217,97 @@ mem_req_s* pcie_ep_c::pull_rxvc() {
   return NULL;
 }
 
-void pcie_ep_c::init_new_pkt(msg_s* pkt, int bytes, int vc_id,
-  int credits, Pkt_Type pkt_type, Pkt_State pkt_state, mem_req_s* req) {
-  pkt->m_id = ++m_unique_id;
-  pkt->m_bytes = bytes;
-  pkt->m_vc_id = vc_id;
-  pkt->m_credits = credits;
-  pkt->m_pkt_type = pkt_type;
-  pkt->m_pkt_state = pkt_state;
-  pkt->m_req = req;
+//////////////////////////////////////////////////////////////////////////////
+
+void pcie_ep_c::process_txtrans() {
+  // round robin policy
+  for (int ii = m_txvc_rr_idx, cnt = 0; cnt < m_vc_cnt; 
+      cnt++, ii = (ii + 1)  % m_vc_cnt) {
+    // VC buffer emtpy
+    if (m_txvc_buff[ii].empty()) {
+      continue;
+    }
+    // VC buffer not empty
+    else {
+      message_s* pkt = m_txvc_buff[ii].front();
+      int vc_id = pkt->m_vc_id;
+
+      // don't consider about flow control packets now
+      if (!check_peer_credit(pkt)) {
+        continue;
+      } else {
+        if (!phys_layer_full(TX)) {
+          pkt->m_txtrans_end = m_cycle + *KNOB(KNOB_PCIE_TXLOGIC_LATENCY);
+          m_txvc_buff[vc_id].pop_front();
+          m_txphys_q.push_back(pkt);
+          break;
+        }
+      }
+    }
+  }
+  m_txvc_rr_idx = (m_txvc_rr_idx + 1) % m_vc_cnt;
 }
 
-void pcie_ep_c::insert_vc_buff(int vc_id, int* size,
-    list<msg_s*>* buff, msg_s* pkt) {
-  assert(size[vc_id] >= pkt->m_bytes);
-
-  size[vc_id] -= pkt->m_bytes;
-  buff[vc_id].push_back(pkt);
+void pcie_ep_c::process_txdll() {
+  return;
 }
 
-msg_s* pcie_ep_c::pull_vc_buffer(int vc_id, int *size, 
-    list<msg_s*>* buff) {
-  assert(buff[vc_id].size() != 0);
+void pcie_ep_c::process_txphys() {
+  if (m_txphys_q.size() == 0) {
+    return;
+  }
 
-  msg_s* pkt = buff[vc_id].front();
-  buff[vc_id].pop_front();
-  size[vc_id] += pkt->m_bytes;
-  return pkt;
+  message_s* pkt = m_txphys_q.front();
+
+  if (pkt->m_txtrans_end > m_cycle) {
+    return;
+  } else {
+    // insert the packet to peer's receive phys q
+    if (m_peer_ep->insert_rxphys(pkt)) {
+      m_txphys_q.pop_front();
+
+      // - packets are sent serially so transmission starts only after
+      //   the previsou packet finished physical layer transmission
+      Counter lat = get_phys_latency(pkt);
+      Counter start_cyc = max(m_prev_txphys_cycle, m_cycle);
+      Counter phys_finished = start_cyc + lat;
+      m_prev_txphys_cycle = phys_finished;
+
+      pkt->m_phys_end = phys_finished;
+
+      // - instead of modeling the rx logic layer latency separately,
+      //   just add the latency here and skip process_rxlogic
+      pkt->m_rxtrans_end = phys_finished + 
+        *KNOB(KNOB_PCIE_RXLOGIC_LATENCY);
+
+      m_rxphys_q.push_back(pkt);
+    }
+  }
+}
+
+void pcie_ep_c::process_rxphys() {
+  while (m_rxphys_q.size()) {
+    message_s* pkt = m_rxphys_q.front();
+
+    // finished physical layer & rx logic layer
+    if (pkt->m_rxtrans_end <= m_cycle) {
+      m_rxphys_q.pop_front();
+      m_rxvc_buff[pkt->m_vc_id].push_back(pkt);
+    } else {
+      break;
+    }
+  }
+}
+
+void pcie_ep_c::process_rxdll() {
+  return;
+}
+
+void pcie_ep_c::process_rxtrans() {
+  return;
 }
 
 void pcie_ep_c::print_ep_info() {
-  std::cout << "txvc" << ": ";
-  for (int ii = 0; ii < m_vc_cnt; ii++) {
-    for (auto pkt : m_txvc_buff[ii]) {
-      std::cout << std::hex << pkt->m_req->m_addr << "; ";
-    }
-  }
-
-  std::cout << "txphys" << ": ";
-  for (auto pkt : *m_txphys_q) {
-    std::cout << std::hex << pkt->m_req->m_addr << "; ";
-  }
-
-  std::cout << "rxvc" << ": ";
-  for (int ii = 0; ii < m_vc_cnt; ii++) {
-    for (auto pkt : m_rxvc_buff[ii]) {
-      std::cout << std::hex << pkt->m_req->m_addr << "; ";
-    }
-  }
-
-  std::cout << "rxphys" << ": ";
-  for (auto pkt : *m_rxphys_q) {
-    std::cout << std::hex << pkt->m_req->m_addr << "; ";
-  }
+  return;
 }
 #endif // CXL

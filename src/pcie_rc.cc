@@ -39,7 +39,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "pcie_rc.h"
 
-
 pcie_rc_c::pcie_rc_c(macsim_c* simBase) 
   : pcie_ep_c(simBase) {
   m_pending_req = new list<mem_req_s*>();
@@ -54,12 +53,14 @@ pcie_rc_c::~pcie_rc_c() {
 void pcie_rc_c::run_a_cycle(bool pll_locked) {
   // receive requests
   end_transaction();
-  process_rxlogic();
+  process_rxtrans();
+  process_rxdll();
   process_rxphys();
 
   // send requests
   process_txphys();
-  process_txlogic();
+  process_txdll();
+  process_txtrans();
   start_transaction();
 
   m_cycle++;

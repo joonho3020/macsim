@@ -49,7 +49,7 @@ ioctrl_c::ioctrl_c(macsim_c* simBase) {
   m_cycle = 0;
 
   // memory pool for packets
-  m_pkt_pool = new pool_c<msg_s>;
+  m_pkt_pool = new pool_c<message_s>;
 
   // io devices
   m_rc = new pcie_rc_c(simBase);

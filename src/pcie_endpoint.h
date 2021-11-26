@@ -45,6 +45,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "packet_info.h"
 #include "macsim.h"
 
+#define TX true
+#define RX false
+
 class pcie_ep_c {
 public:
   /**
@@ -60,7 +63,7 @@ public:
   /**
    * Initialize PCIe endpoint
    */
-  void init(int id, pool_c<msg_s>* pkt_pool, pcie_ep_c* peer);
+  void init(int id, pool_c<message_s>* pkt_pool, pcie_ep_c* peer);
 
   /**
    * Tick a cycle
@@ -70,12 +73,9 @@ public:
   /**
    * Receive packet from transmit side & put in rx physical q
    */
-  bool insert_rxphys(msg_s* pkt);
+  bool insert_rxphys(message_s* pkt);
 
-  /**
-   * Checks it has enough credits to send a TLP packet
-   */
-  bool check_credit(msg_s* pkt);
+  bool check_peer_credit(message_s* pkt);
 
   /**
    * Print for debugging
@@ -88,18 +88,12 @@ private:
   /**
    * Gets cycles required to transfer the packet over physical layer
    */
-  Counter get_phys_latency(msg_s* pkt);
+  Counter get_phys_latency(message_s* pkt);
 
-  /**
-   * Checks it physical layer can accept new entries into the queue
-   */
   bool phys_layer_full(bool tx);
 
-  /**
-   * Inserts a TLP to physical layer
-   */
-  void insert_tx_phys(msg_s* pkt, bool front);
-  
+  void init_new_pkt(message_s* pkt, int bits, int vc_id, mem_req_s* req);
+
 protected:
   /**
    * Start PCIe transaction by inserting requests
@@ -107,84 +101,51 @@ protected:
   virtual void start_transaction();
 
   /**
-   * End PCIe transaction by pulling requests
-   */
-  virtual void end_transaction();
-
-  /**
-   * Choose a packet from VC or DLLP & sends it to physical TX
-   */
-  void process_txlogic();
-
-  /**
-   * Sends a packet over the physical layer
-   */
-  void process_txphys();
-
-  /**
-   * Receives a packet from the physical RX & stores it in RX VC buffer
-   */
-  void process_rxphys();
-
-  /**
-   * Receives a packet from the physical RX & processes it
-   */
-  void process_rxlogic();
-
-  /**
    * Push request to TX VC buffer
    */
   bool push_txvc(mem_req_s* mem_req);
+
+  /**
+   * End PCIe transaction by pulling requests
+   */
+  virtual void end_transaction();
 
   /**
    * Pull request from RX VC buffer
    */
   mem_req_s* pull_rxvc();
 
-  /**
-   * Initialize a new packet
-   */
-  void init_new_pkt(msg_s* pkt, int bytes, int vc_id, int credits,
-    Pkt_Type pkt_type, Pkt_State pkt_state, mem_req_s* req);
+  // PCIE layer related
+  void process_txtrans();
+  void process_txdll();
+  void process_txphys();
 
-  /**
-   * Insert packet to VC buffer
-   */
-  void insert_vc_buff(int vc_id, int* size, list<msg_s*> *buff,
-      msg_s* pkt);
-
-  /**
-   * Pull packet from VC buffer
-   */
-  msg_s* pull_vc_buffer(int vc_id, int* size, list<msg_s*> *buff);
+  void process_rxphys();
+  void process_rxdll();
+  void process_rxtrans();
 
 public:
   static int m_unique_id; /**< unique packet id */
 
 private:
   int m_id; /**< unique id of each endpoint */
-  int m_memreq_size; /**< size of mem_req_s in bytes */
-  pool_c<msg_s>* m_pkt_pool; /**< packet pool */
-  int m_rr_idx; /**< index used for RR policy */
+  pool_c<message_s>* m_pkt_pool; /**< packet pool */
+
   int m_lanes; /**< PCIe lanes connected to endpoint */
   float m_perlane_bw; /**< PCIe per lane BW in GB (cycles to send 1B) */
   Counter m_prev_txphys_cycle; /**< finish cycle of previously sent packet */
 
+  int m_txvc_rr_idx;
   int m_vc_cnt; /**< VC number */
   int m_vc_cap; /**< VC buffer capacity */
-  int* m_txvc_size; /**< remaining space of TX VC */
-  int* m_rxvc_size; /**< remaining space of RX VC */
-  list<msg_s*>* m_txvc_buff; /**< buffer of TX VC */
-  list<msg_s*>* m_rxvc_buff; /**< buffer of RX VC */
-
-  int m_credit_cap; /**< initial credit of each VC */
-  int* m_credit; /**< remaining RX VC buff of pair endpoint */
+  list<message_s*>* m_txvc_buff; /**< buffer of TX VC */
+  list<message_s*>* m_rxvc_buff; /**< buffer of RX VC */
 
   int m_phys_cap; /**< maximum numbers of packets in physical layer q */
-  list<msg_s*>* m_txphys_q; /**< physical layer send queue */
-  list<msg_s*>* m_rxphys_q; /**< physical layer receive queue */
+  list<message_s*> m_txphys_q; /**< physical layer send queue */
+  list<message_s*> m_rxphys_q; /**< physical layer receive queue */
 
-protected:
+public:
   pcie_ep_c* m_peer_ep; /**< endpoint connected to this endpoint */
   macsim_c* m_simBase; /**< simulation base */
   Counter m_cycle; /**< PCIe clock cycle */

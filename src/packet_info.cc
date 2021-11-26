@@ -36,23 +36,17 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "packet_info.h"
 
-msg_s::msg_s(macsim_c* simBase) {
+message_s::message_s(macsim_c* simBase) {
   init();
   m_simBase = simBase;
 }
 
-void msg_s::init(void) {
+void message_s::init(void) {
   m_id = 0;
-  m_bytes = 0;
-  m_logic_end = 0;
-  m_phys_start = 0;
-  m_rxlogic_finished = 0;
-  m_done = false;
+  m_bits = 0;
+  m_txtrans_end = 0;
+  m_phys_end = 0;
+  m_rxtrans_end = 0;
   m_vc_id = -1;
-  m_credits = -1;
-  // m_pkt_src = -1;
-  // m_pkt_dst = -1;
-  m_pkt_type = PKT_NONE;
-  m_pkt_state = PKT_INVAL;
   m_req = NULL;
 }

@@ -88,7 +88,8 @@ cxlt3_c::~cxlt3_c() {
 void cxlt3_c::run_a_cycle(bool pll_locked) {
   // send response
   process_txphys();
-  process_txlogic();
+  process_txdll();
+  process_txtrans();
   start_transaction();
 
   // process memory requests
@@ -97,7 +98,8 @@ void cxlt3_c::run_a_cycle(bool pll_locked) {
 
   // receive memory request
   end_transaction(); 
-  process_rxlogic();
+  process_rxtrans();
+  process_rxdll();
   process_rxphys();
 
   m_cycle++;

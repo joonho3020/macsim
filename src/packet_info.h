@@ -46,55 +46,21 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "global_defs.h"
 #include "global_types.h"
 
-///////////////////////////////////////////////////////////////////////////////////////////////
-/// \brief Memory request state
-///////////////////////////////////////////////////////////////////////////////////////////////
-typedef enum Pkt_State_enum {
-  PKT_INVAL,
-  PKT_TVC,
-  PKT_RVC,
-  PKT_PHY,
-  PKT_DLL
-} Pkt_State;
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-/// \brief packet request type
-///////////////////////////////////////////////////////////////////////////////////////////////
-typedef enum Pkt_Type_enum {
-  PKT_NONE,
-  PKT_MRD,
-  PKT_MWR,
-  PKT_CPLD,
-  PKT_FCTRL,
-  PKT_ACK,
-  PKT_NAK
-} Pkt_Type;
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-/// \brief pcie packet data structure
-///////////////////////////////////////////////////////////////////////////////////////////////
-typedef struct msg_s {
+typedef struct message_s {
   /**
    * Constructor
    */
-  msg_s(macsim_c* simBase);
+  message_s(macsim_c* simBase);
   void init(void);
 
   int m_id; /**< unique request id */
-  int m_bytes; /**< bytes of a packet */
-  Counter m_logic_end; /**< logic layer end cycle */
-  Counter m_phys_start; /**< physical layer start cycle */
-  Counter m_rxlogic_finished;  /**< rxlogic finished cycle */
-  bool m_done; /**< packet transfer done */
+  int m_bits; /**< bits of a packet */
+  Counter m_txtrans_end;
+  Counter m_phys_end;
+  Counter m_rxtrans_end;  /**< rxlogic finished cycle */
   int m_vc_id; /**< VC id */
-  int m_credits; /**< credits for flow ctrl */
-  // int m_pkt_src; /**< packet source endpoint */
-  // int m_pkt_dst; /**< packet destination endpoint */
-  Pkt_Type m_pkt_type; /**< packet type */
-  Pkt_State m_pkt_state; /**< packet state */
   mem_req_s* m_req; /**< packet may be a result of mem request */
   macsim_c* m_simBase; /**< reference to macsim base class for sim globals */
-} msg_s;
+} message_s;
 
 #endif /* #ifndef MEMORY_H_INCLUDED  */
