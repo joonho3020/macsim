@@ -357,6 +357,15 @@ void pcie_ep_c::process_txtrans() {
   m_txvc_rr_idx = (m_txvc_rr_idx + 1) % m_vc_cnt;
 }
 
+// FIXME
+// - Currently we are making flits as messages come.
+// - However, it may be better to wait for comming messages to form a single flit
+// - as it can save bandwidth.
+// - On the otherhand, if implemented wrongly, it can lengthen the packet latency.
+// FIXME 2
+// - Currently, only one message can fit into a flit slot.
+// - However, for response messages, multiple messages can fit into a slot.
+// - Need to impelement this part to save BW.
 void pcie_ep_c::process_txdll() {
   message_s* msg;
   flit_s* new_flit = NULL;
@@ -404,7 +413,8 @@ void pcie_ep_c::process_txphys() {
       } else if (cur_flit->m_txdll_end <= m_cycle) {
         // - packets are sent serially so transmission starts only after
         //   the previous packet finished physical layer transmission
-        Counter lat = get_phys_latency(cur_flit);
+        Counter lat = get_phys_latency(cur_flit) 
+                      + 2*(*KNOB(KNOB_PCIE_ARBMUX_LATENCY)); // tx & rx
         Counter start_cyc = max(m_prev_txphys_cycle, m_cycle);
         Counter phys_finished = start_cyc + lat;
 
