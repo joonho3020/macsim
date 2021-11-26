@@ -49,7 +49,8 @@ ioctrl_c::ioctrl_c(macsim_c* simBase) {
   m_cycle = 0;
 
   // memory pool for packets
-  m_pkt_pool = new pool_c<message_s>;
+  m_msg_pool = new pool_c<message_s>;
+  m_flit_pool = new pool_c<flit_s>;
 
   // io devices
   m_rc = new pcie_rc_c(simBase);
@@ -59,12 +60,13 @@ ioctrl_c::ioctrl_c(macsim_c* simBase) {
 ioctrl_c::~ioctrl_c() {
   delete m_rc;
   delete m_cme;
-  delete m_pkt_pool;
+  delete m_msg_pool;
+  delete m_flit_pool;
 }
 
 void ioctrl_c::initialize() {
-  m_rc->init(0, true, m_pkt_pool, m_cme);
-  m_cme->init(1, false, m_pkt_pool, m_rc);
+  m_rc->init(0, true, m_msg_pool, m_flit_pool, m_cme);
+  m_cme->init(1, false, m_msg_pool, m_flit_pool, m_rc);
 }
 
 void ioctrl_c::run_a_cycle(bool pll_locked) {
@@ -75,7 +77,7 @@ void ioctrl_c::run_a_cycle(bool pll_locked) {
   if (*KNOB(KNOB_DEBUG_IO_SYS)) {
     std::cout << std::endl;
     std::cout << "io cycle : " << std::dec << m_cycle << std::endl;
-    m_simBase->m_dram_controller[0]->print_req();
+    // m_simBase->m_dram_controller[0]->print_req();
     m_cme->print_cxlt3_info();
     m_rc->print_rc_info();
   }

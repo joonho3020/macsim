@@ -46,7 +46,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "all_stats.h"
 #include "assert_macros.h"
 
-int pcie_ep_c::m_unique_id = 0;
+int pcie_ep_c::m_msg_uid;
+int pcie_ep_c::m_flit_uid;
 
 pcie_ep_c::pcie_ep_c(macsim_c* simBase) {
   // simulation related
@@ -71,11 +72,12 @@ pcie_ep_c::pcie_ep_c(macsim_c* simBase) {
 
   ASSERTM(m_vc_cnt == 2, "currently only 2 virtual channels exist\n");
 
-
   // initialize dll
   m_txdll_cap = *KNOB(KNOB_PCIE_TXDLL_CAPACITY);
+  m_txreplay_cap = *KNOB(KNOB_PCIE_TXREPLAY_CAPACITY);
 
-  // initialize physical layers
+  // FIXME : Capacity by lane
+  // initialize physical layers 
   m_phys_cap = *KNOB(KNOB_PCIE_PHYS_CAPACITY);
 }
 
@@ -84,10 +86,12 @@ pcie_ep_c::~pcie_ep_c() {
   delete[] m_rxvc_buff;
 }
 
-void pcie_ep_c::init(int id, bool master, pool_c<message_s>* msg_pool, pcie_ep_c* peer) {
+void pcie_ep_c::init(int id, bool master, pool_c<message_s>* msg_pool, 
+                     pool_c<flit_s>* flit_pool, pcie_ep_c* peer) {
   m_id = id;
   m_master = master;
   m_msg_pool = msg_pool;
+  m_flit_pool = flit_pool;
   m_peer_ep = peer;
 }
 
@@ -107,13 +111,13 @@ void pcie_ep_c::run_a_cycle(bool pll_locked) {
   m_cycle++;
 }
 
-bool pcie_ep_c::insert_rxphys(message_s* pkt) {
-  if ((int)m_rxphys_q.size() >= m_phys_cap) {
-    return false;
-  } else {
-    m_rxphys_q.push_back(pkt);
-    return true;
-  }
+bool pcie_ep_c::phys_layer_full() {
+  return (m_phys_cap == (int)m_rxphys_q.size());
+}
+
+void pcie_ep_c::insert_phys(flit_s* flit) {
+  assert(!phys_layer_full());
+  m_rxphys_q.push_back(flit);
 }
 
 bool pcie_ep_c::check_peer_credit(message_s* pkt) {
@@ -124,9 +128,10 @@ bool pcie_ep_c::check_peer_credit(message_s* pkt) {
 //////////////////////////////////////////////////////////////////////////////
 // private
 
-Counter pcie_ep_c::get_phys_latency(message_s* pkt) {
+Counter pcie_ep_c::get_phys_latency(flit_s* flit) {
   float freq = *KNOB(KNOB_CLOCK_IO);
-  return static_cast<Counter>(pkt->m_bits / m_perlane_bw * freq);
+  int lanes = *KNOB(KNOB_PCIE_LANES);
+  return static_cast<Counter>(flit->m_bits / (lanes * m_perlane_bw) * freq);
 }
 
 bool pcie_ep_c::dll_layer_full(bool tx) {
@@ -137,23 +142,33 @@ bool pcie_ep_c::dll_layer_full(bool tx) {
   }
 }
 
-bool pcie_ep_c::phys_layer_full(bool tx) {
-  if (tx) {
-    return (m_phys_cap == (int)m_txphys_q.size());
-  } else { // rx
-    return (m_phys_cap == (int)m_rxphys_q.size());
-  }
-}
-
-void pcie_ep_c::init_new_msg(message_s* msg, int bits, int vc_id, mem_req_s* req) {
-  msg->m_id = ++m_unique_id;
-  msg->m_bits = bits;
+void pcie_ep_c::init_new_msg(message_s* msg, int vc_id, mem_req_s* req) {
+  msg->m_id = ++m_msg_uid;
   msg->m_vc_id = vc_id;
   msg->m_req = req;
 }
 
+void pcie_ep_c::init_new_flit(flit_s* flit, int bits) {
+  flit->m_id = ++m_flit_uid;
+  flit->m_bits = bits;
+  flit->m_phys_end = 0;
+  flit->m_msgs.clear();
+}
+
 bool pcie_ep_c::txvc_not_full(int channel) {
   return (m_txvc_cap - (int)m_txvc_buff[channel].size() > 0);
+}
+
+void pcie_ep_c::parse_and_insert_flit(flit_s* flit) {
+  for (auto msg : flit->m_msgs) {
+    int vc_id = msg->m_vc_id;
+    assert(m_rxvc_cap > (int)m_rxvc_buff[vc_id].size()); // flow control
+
+    msg->m_rxtrans_end = m_cycle + *KNOB(KNOB_PCIE_RXTRANS_LATENCY);
+    m_rxvc_buff[vc_id].push_back(msg);
+  }
+  flit->init();
+  m_flit_pool->release_entry(flit);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -181,7 +196,7 @@ bool pcie_ep_c::push_txvc(mem_req_s* mem_req) {
     return false;
   } else {
     new_msg = m_msg_pool->acquire_entry(m_simBase);
-    init_new_msg(new_msg, 544, channel, mem_req);
+    init_new_msg(new_msg, channel, mem_req);
     m_txvc_buff[channel].push_back(new_msg);
     return true;
   }
@@ -214,17 +229,18 @@ mem_req_s* pcie_ep_c::pull_rxvc() {
   for (auto cand : candidate) {
     int vc_id = cand.second;
 
-    message_s* pkt = m_rxvc_buff[vc_id].front();
+    message_s* msg = m_rxvc_buff[vc_id].front();
     m_rxvc_buff[vc_id].pop_front();
 
-    if (pkt->m_rxtrans_end > m_cycle) {
+    if (msg->m_rxtrans_end > m_cycle) {
       continue;
     } else {
-      assert(pkt->m_vc_id == vc_id);
-      assert(pkt->m_req);
+      assert(msg->m_vc_id == vc_id);
+      assert(msg->m_req);
 
-      mem_req_s* mem_req = pkt->m_req;
-      m_msg_pool->release_entry(pkt);
+      mem_req_s* mem_req = msg->m_req;
+      msg->init();
+      m_msg_pool->release_entry(msg);
       return mem_req;
     }
   }
@@ -263,64 +279,73 @@ void pcie_ep_c::process_txtrans() {
 }
 
 void pcie_ep_c::process_txdll() {
-  if ((int)m_txdll_q.size() == 0) {
+  message_s* msg;
+  flit_s* new_flit = NULL;
+  int max_msg_per_flit = *KNOB(KNOB_PCIE_MAX_MSG_PER_FLIT);
+
+  if (m_txreplay_cap == (int)m_txreplay_buff.size()) {
     return;
   }
 
-  message_s* msg = m_txdll_q.front();
+  for (int ii = 0; ii < max_msg_per_flit; ii++) {
+    // dll q empty
+    if ((int)m_txdll_q.size() == 0) {
+      break;
+    }
 
-  if (msg->m_txtrans_end > m_cycle) { // msg not ready
-    return;
-  } else if (phys_layer_full(TX)) { // phys layer full
-    return;
-  } else { // msg ready && phys layer ready
-    m_txdll_q.pop_front();
-    m_txphys_q.push_back(msg);
-    return;
+    msg = m_txdll_q.front();
+    if (msg->m_txtrans_end > m_cycle) { // message not ready
+      break;
+    } else { // message ready
+      m_txdll_q.pop_front();
+
+      if (new_flit == NULL) {
+        new_flit = m_flit_pool->acquire_entry(m_simBase);
+        init_new_flit(new_flit, *KNOB(KNOB_PCIE_FLIT_BITS));
+      }
+      assert(new_flit);
+      new_flit->m_msgs.push_back(msg);
+    }
+  }
+
+  if (new_flit) {
+    new_flit->m_txdll_end = m_cycle + *KNOB(KNOB_PCIE_TXDLL_LATENCY);
+    m_txreplay_buff.push_back(new_flit);
   }
 }
 
 void pcie_ep_c::process_txphys() {
-  if ((int)m_txphys_q.size() == 0) {
-    return;
-  }
+  // FIXME : don't pop in the replay buffer at once
+  while (!m_peer_ep->phys_layer_full() && !m_txreplay_buff.empty()) {
+    flit_s* cur_flit = m_txreplay_buff.front();
 
-  message_s* pkt = m_txphys_q.front();
-
-  if (pkt->m_txtrans_end > m_cycle) {
-    return;
-  } else {
-    // insert the packet to peer's receive phys q
-    if (m_peer_ep->insert_rxphys(pkt)) {
-      m_txphys_q.pop_front();
+    if ((cur_flit->m_txdll_end <= m_cycle)) {
 
       // - packets are sent serially so transmission starts only after
       //   the previsou packet finished physical layer transmission
-      Counter lat = get_phys_latency(pkt);
+      Counter lat = get_phys_latency(cur_flit);
       Counter start_cyc = max(m_prev_txphys_cycle, m_cycle);
       Counter phys_finished = start_cyc + lat;
+
       m_prev_txphys_cycle = phys_finished;
+      cur_flit->m_phys_end = phys_finished;
+      cur_flit->m_rxdll_end = phys_finished + *KNOB(KNOB_PCIE_RXDLL_LATENCY);
 
-      pkt->m_phys_end = phys_finished;
-
-      // - instead of modeling the rx logic layer latency separately,
-      //   just add the latency here and skip process_rxlogic
-      pkt->m_rxtrans_end = phys_finished + 
-        *KNOB(KNOB_PCIE_RXLOGIC_LATENCY);
-
-      m_rxphys_q.push_back(pkt);
+      // push to peer endpoint physical
+      m_txreplay_buff.pop_front();
+      m_peer_ep->insert_phys(cur_flit);
     }
   }
 }
 
 void pcie_ep_c::process_rxphys() {
   while (m_rxphys_q.size()) {
-    message_s* pkt = m_rxphys_q.front();
+    flit_s* flit = m_rxphys_q.front();
 
-    // finished physical layer & rx logic layer
-    if (pkt->m_rxtrans_end <= m_cycle) {
+    // finished physical layer & rx dll layer
+    if (flit->m_rxdll_end <= m_cycle) {
       m_rxphys_q.pop_front();
-      m_rxvc_buff[pkt->m_vc_id].push_back(pkt);
+      parse_and_insert_flit(flit);
     } else {
       break;
     }
@@ -336,6 +361,34 @@ void pcie_ep_c::process_rxtrans() {
 }
 
 void pcie_ep_c::print_ep_info() {
-  return;
+  for (int ii = 0; ii < m_vc_cnt; ii++) {
+    std::cout << "======== TXVC[" << ii << "]" << std::endl;
+    for (auto msg : m_txvc_buff[ii]) {
+      msg->print();
+    }
+  }
+
+  std::cout << "======== TXDLL" << std::endl;
+  for (auto msg : m_txdll_q) {
+    msg->print();
+  }
+
+  std::cout << "======= Replay buff" << std::endl;
+  for (auto flit : m_txreplay_buff) {
+    flit->print();
+  }
+
+  std::cout << "======= RX Physical" << std::endl;
+  for (auto flit : m_rxphys_q) {
+    flit->print();
+  }
+
+  for (int ii = 0; ii < m_vc_cnt; ii++) {
+    std::cout << "======== RXVC[" << ii << "]" << std::endl;
+    for (auto msg : m_rxvc_buff[ii]) {
+      msg->print();
+    }
+  }
 }
+
 #endif // CXL

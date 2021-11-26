@@ -66,7 +66,8 @@ public:
   /**
    * Initialize PCIe endpoint
    */
-  void init(int id, bool master, pool_c<message_s>* msg_pool, pcie_ep_c* peer);
+  void init(int id, bool master, pool_c<message_s>* msg_pool, 
+            pool_c<flit_s>* flit_pool, pcie_ep_c* peer);
 
   /**
    * Tick a cycle
@@ -76,7 +77,8 @@ public:
   /**
    * Receive packet from transmit side & put in rx physical q
    */
-  bool insert_rxphys(message_s* pkt);
+  bool phys_layer_full(void);
+  void insert_phys(flit_s* flit);
 
   bool check_peer_credit(message_s* pkt);
 
@@ -91,14 +93,15 @@ private:
   /**
    * Gets cycles required to transfer the packet over physical layer
    */
-  Counter get_phys_latency(message_s* pkt);
+  Counter get_phys_latency(flit_s* pkt);
 
   bool dll_layer_full(bool tx);
-  bool phys_layer_full(bool tx);
 
-  void init_new_msg(message_s* pkt, int bits, int vc_id, mem_req_s* req);
+  void init_new_msg(message_s* pkt, int vc_id, mem_req_s* req);
+  void init_new_flit(flit_s* flit, int bits);
 
   bool txvc_not_full(int channel);
+  void parse_and_insert_flit(flit_s* flit);
 
 protected:
   /**
@@ -131,12 +134,14 @@ protected:
   void process_rxtrans();
 
 public:
-  static int m_unique_id; /**< unique packet id */
+  static int m_msg_uid;
+  static int m_flit_uid;
 
 private:
   int m_id; /**< unique id of each endpoint */
   bool m_master;
   pool_c<message_s>* m_msg_pool; /**< packet pool */
+  pool_c<flit_s>* m_flit_pool;
 
   int m_lanes; /**< PCIe lanes connected to endpoint */
   float m_perlane_bw; /**< PCIe per lane BW in GB (cycles to send 1B) */
@@ -151,10 +156,11 @@ private:
 
   int m_txdll_cap;
   list<message_s*> m_txdll_q;
+  int m_txreplay_cap;
+  list<flit_s*> m_txreplay_buff;
 
   int m_phys_cap; /**< maximum numbers of packets in physical layer q */
-  list<message_s*> m_txphys_q; /**< physical layer send queue */
-  list<message_s*> m_rxphys_q; /**< physical layer receive queue */
+  list<flit_s*> m_rxphys_q; /**< physical layer receive queue */
 
 public:
   pcie_ep_c* m_peer_ep; /**< endpoint connected to this endpoint */

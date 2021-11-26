@@ -52,15 +52,28 @@ typedef struct message_s {
    */
   message_s(macsim_c* simBase);
   void init(void);
+  void print(void);
 
   int m_id; /**< unique request id */
-  int m_bits; /**< bits of a packet */
   Counter m_txtrans_end;
-  Counter m_phys_end;
   Counter m_rxtrans_end;  /**< rxlogic finished cycle */
   int m_vc_id; /**< VC id */
   mem_req_s* m_req; /**< packet may be a result of mem request */
   macsim_c* m_simBase; /**< reference to macsim base class for sim globals */
 } message_s;
+
+typedef struct flit_s {
+  flit_s(macsim_c* simBase);
+  void init(void);
+  void print(void);
+
+  int m_id;
+  int m_bits;
+  Counter m_txdll_end;
+  Counter m_phys_end;
+  Counter m_rxdll_end;
+  list<message_s*> m_msgs;
+  macsim_c* m_simBase;
+} flit_s;
 
 #endif /* #ifndef MEMORY_H_INCLUDED  */

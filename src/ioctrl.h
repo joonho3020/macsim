@@ -71,7 +71,8 @@ public:
   Counter m_cycle;
 
 private:
-  pool_c<message_s>* m_pkt_pool;
+  pool_c<message_s>* m_msg_pool;
+  pool_c<flit_s>* m_flit_pool;
 };
 
 #endif // CXL

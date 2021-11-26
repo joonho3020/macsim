@@ -33,8 +33,6 @@ param<CLOCK_IO, clock_io, float, 0.8>
 param<CME_ENABLE, cme_enable, bool, false>
 param<CME_RANGE, cme_addr_min, uint64_t, 0>
 param<CME_LATENCY, cme_latency, long, 300>
-param<CME_DRAMSIM3_CONFIG, cme_dramsim3_config, string, ./configs/DDR5_8Gb_x8_1866.ini>
-param<CME_DRAMSIM3_OUT, dramsim3_out, string, .>
 
 /* PCIe */
 param<PCIE_LANES, pcie_lanes, int, 8>
@@ -47,7 +45,14 @@ param<PCIE_RXVC_CAPACITY, pcie_rxvc_capacity, int, 8>
 param<PCIE_TXDLL_CAPACITY, pcie_txdll_capacity, int, 8>
 
 param<PCIE_PHYS_CAPACITY, pcie_phys_capacity, int, 8>
+param<PCIE_TXREPLAY_CAPACITY, pcie_txreplay_capacity, int, 8>
 
 /* Latency related */
 param<PCIE_TXTRANS_LATENCY, pcie_txtrans_latency, uint64_t, 5>
-param<PCIE_RXLOGIC_LATENCY, pcie_rxlogic_latency, uint64_t, 10>
+param<PCIE_TXDLL_LATENCY, pcie_txdll_latency, uint64_t, 5>
+param<PCIE_RXTRANS_LATENCY, pcie_rxtrans_latency, uint64_t, 5>
+param<PCIE_RXDLL_LATENCY, pcie_rxdll_latency, uint64_t, 5>
+
+/* Flit related */
+param<PCIE_MAX_MSG_PER_FLIT, pcie_max_msg_per_flit, int, 4>
+param<PCIE_FLIT_BITS, pcie_flit_bits, int, 544>

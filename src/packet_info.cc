@@ -34,7 +34,10 @@ POSSIBILITY OF SUCH DAMAGE.
  * Description  : PCIe packet information
  *********************************************************************************************/
 
+#include <iostream>
+
 #include "packet_info.h"
+#include "memreq_info.h"
 
 message_s::message_s(macsim_c* simBase) {
   init();
@@ -43,10 +46,40 @@ message_s::message_s(macsim_c* simBase) {
 
 void message_s::init(void) {
   m_id = 0;
-  m_bits = 0;
   m_txtrans_end = 0;
-  m_phys_end = 0;
   m_rxtrans_end = 0;
   m_vc_id = -1;
   m_req = NULL;
 }
+
+void message_s::print(void) {
+  Addr addr = m_req ? m_req->m_addr : 0x00;
+  
+  std::cout << "= <MSG> addr: " << std::hex << addr
+                << " channel: " << std::dec << m_vc_id << std::endl;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+flit_s::flit_s(macsim_c* simBase) {
+  init();
+  m_simBase = simBase;
+}
+
+void flit_s::init(void) {
+  m_id = 0;
+  m_bits = 0;
+  m_txdll_end = 0;
+  m_phys_end = 0;
+  m_rxdll_end = 0;
+  m_msgs.clear();
+}
+
+void flit_s::print(void) {
+  std::cout << "====== <FLIT> " << std::endl;
+  for (auto msg : m_msgs) {
+    msg->print();
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
