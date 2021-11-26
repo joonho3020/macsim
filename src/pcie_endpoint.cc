@@ -60,6 +60,8 @@ pcie_ep_c::pcie_ep_c(macsim_c* simBase) {
   m_prev_txphys_cycle = 0;
   m_peer_ep = NULL;
 
+  ASSERTM((m_lanes & (m_lanes - 1)) == 0, "number of lanes should be power of 2\n");
+
   m_txvc_rr_idx = 0;
 
   // initialize VC buffers & credit
@@ -76,9 +78,23 @@ pcie_ep_c::pcie_ep_c(macsim_c* simBase) {
   m_txdll_cap = *KNOB(KNOB_PCIE_TXDLL_CAPACITY);
   m_txreplay_cap = *KNOB(KNOB_PCIE_TXREPLAY_CAPACITY);
 
-  // FIXME : Capacity by lane
   // initialize physical layers 
-  m_phys_cap = *KNOB(KNOB_PCIE_PHYS_CAPACITY);
+  switch (m_lanes) {
+    case 16: 
+      m_phys_cap = 4; 
+      break;
+    case 8: 
+      m_phys_cap = 2; 
+      break;
+    case 4:
+    case 2:
+    case 1:
+      m_phys_cap = 1;
+      break;
+    default:
+      assert(0);
+      break;
+  }
 }
 
 pcie_ep_c::~pcie_ep_c() {
