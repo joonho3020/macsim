@@ -44,20 +44,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "macsim.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-/// \brief CME request entry class
-///////////////////////////////////////////////////////////////////////////////////////////////
-typedef struct cme_entry_s {
-  mem_req_s* m_req; /**< memory request pointer */
-  Counter m_start_req; /**< last touched cycle */
-  Counter m_cycles; /**< cycles since request start */
-  macsim_c* m_simBase; /**< macsim_c base class for simulation globals */
-
-  cme_entry_s(macsim_c* simBase);
-  void set(mem_req_s* req, Counter cur_tick);
-  void reset();
-} cme_entry_s;
-
-///////////////////////////////////////////////////////////////////////////////////////////////
 /// \brief Memory controller base class
 ///////////////////////////////////////////////////////////////////////////////////////////////
 class dram_c
@@ -88,11 +74,6 @@ public:
    */
   virtual void run_a_cycle(bool) = 0;
 
-  /**
-   * Pop a request in pushed q
-   */
-  void pop_pushedq(mem_req_s* req);
-
 protected:
   /**
    * Send a packet to NOC
@@ -118,11 +99,6 @@ protected:
   int m_id; /**< MC id */
 
   // Joonho : for CXL memory expander
-  set<Addr> m_accessed_addr; /**< for debugging */
-  list<cme_entry_s*>* m_cme_free_list; /**< cme free list */
-  list<cme_entry_s*>* m_cmein_buffer; /**< incoming cme requests */
-  list<mem_req_s*>* m_cmepend_buffer; /**< serving cme requests */
-  list<mem_req_s*>* m_cmeout_buffer; /**< cme done requests */
   map<Addr, Counter> m_access_dist;
 };
 

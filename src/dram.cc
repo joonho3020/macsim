@@ -38,48 +38,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
 #include "dram.h"
 
-cme_entry_s::cme_entry_s(macsim_c *simBase) {
-  reset();
-  m_simBase = simBase;
-}
-
-void cme_entry_s::set(mem_req_s* req, Counter cur_tick) {
-  m_req = req;
-  m_start_req = cur_tick;
-  m_cycles = 0;
-}
-
-void cme_entry_s::reset() {
-  m_req = NULL;
-  m_cycles = -1;
-  m_start_req = -1;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-
 dram_c::dram_c(macsim_c* simBase) : m_simBase(simBase) {
-  // CME buffers
-  m_cmein_buffer = new list<cme_entry_s*>;
-  m_cmepend_buffer = new list<mem_req_s*>;
-  m_cmeout_buffer = new list<mem_req_s*>;
-  m_cme_free_list = new list<cme_entry_s*>;
-
-  for (int ii = 0; ii < 30; ii++) {
-    cme_entry_s* new_entry = new cme_entry_s(m_simBase);
-    m_cme_free_list->push_back(new_entry);
-  }
 }
 
 dram_c::~dram_c() {
-  if (!m_accessed_addr.empty()) {
-    std::cerr << "min access addr: " << 
-      hex << *m_accessed_addr.begin() << std::endl;
-    std::cerr << "max access addr:" << 
-      hex << *m_accessed_addr.rbegin() << std::endl;
-  } else {
-    std::cerr << "No accessed memory" << std::endl;
-  }
   ofstream address_file;
   string fname = "address_dist.txt";
 
@@ -91,14 +53,4 @@ dram_c::~dram_c() {
     }
   }
   address_file.close();
-
-  delete m_cmein_buffer;
-  delete m_cmepend_buffer;
-  delete m_cmeout_buffer;
-  delete m_cme_free_list;
 }
-
-void dram_c::pop_pushedq(mem_req_s *req) {
-  m_cmepend_buffer->remove(req);
-}
-
