@@ -117,10 +117,6 @@ class CoreStatistics;
 class cache_partition_framework_c;
 class dyfr_c;
 class MMU;
-class ioctrl_c;
-class pcie_ep_c;
-class pcie_rc_c;
-class cxlt3_c;
 
 template <class T>
 class pqueue_c;
