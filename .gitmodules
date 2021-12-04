@@ -1,15 +1,6 @@
-[submodule "internal"]
-	path = internal
-	url = https://github.com/gthparch/macsim_internal
-[submodule "src/rwqueue"]
-	path = src/rwqueue
-	url = https://github.com/cameron314/readerwriterqueue
-[submodule "src/DRAMSim2"]
-	path = src/DRAMsim2
-	url = https://github.com/snu-comparch/DRAMSim2.git
-[submodule "src/DRAMsim3"]
-	path = src/DRAMsim3
-	url = https://github.com/snu-comparch/DRAMsim3.git
 [submodule "src/ramulator"]
 	path = src/ramulator
 	url = https://github.com/snu-comparch/ramulator.git
+[submodule "src/CXLSim"]
+	path = src/CXLSim
+	url = https://github.com/snu-comparch/CXLSim.git
