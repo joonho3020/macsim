@@ -1,5 +1,0 @@
-break ioctrl_c::run_a_cycle(bool)
-disable $bpnum
-break pcie_ep_c::push_txvc(mem_req_s*)
-disable $bpnum
-break /home/ipa/joonho/Documents/bench/Simulators/macsim/src/pcie_rc.cc:74

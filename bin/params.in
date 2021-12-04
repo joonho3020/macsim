@@ -140,35 +140,8 @@ noc_topology mesh
 noc_dimension 2
 
 # CXL
-cme_enable 1
-cme_addr_min 0
-
-# PCIe
-# BW related
-pcie_lanes 16
-pcie_per_lane_bw 32
-
-# Don't touch
-pcie_vc_cnt 2
-
-# Capacity params
-pcie_txvc_capacity 8
-pcie_rxvc_capacity 8
-pcie_txdll_capacity 8
-pcie_phys_capacity 8
-pcie_txreplay_capacity 8
-
-# Latency params
-pcie_txtrans_latency 5
-pcie_txdll_latency 5
-pcie_rxtrans_latency 5
-pcie_rxdll_latency 5
-pcie_arbmux_latency 2
-
-# Don't touch
-pcie_max_msg_per_flit 4
-pcie_flit_bits 528
-pcie_data_slots_per_flit 4
+mxp_enable 1
+mxp_addr_min 0
 
 # ETC
 bug_detector_enable 1
@@ -190,7 +163,6 @@ debug_trace_read 0
 debug_sim_thread_schedule 0
 debug_cache_lib 0
 debug_bp_dir 0
-debug_io_sys 0
 
 
 # OUTPUT Redirect
