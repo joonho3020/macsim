@@ -42,9 +42,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "debug_macros.h"
 #include "bug_detector.h"
 #include "memory.h"
-#include "ioctrl.h"
-#include "cxl_t3.h"
-#include "pcie_rc.h"
 
 #include "all_knobs.h"
 #include "statistics.h"
@@ -66,8 +63,8 @@ dram_dramsim3_c::dram_dramsim3_c(macsim_c* simBase) : dram_c(simBase) {
   m_tmp_output_buffer = new list<mem_req_s*>;
   m_pending_request = new list<mem_req_s*>;
 
-  std::string config_file = *KNOB(KNOB_DRAMSIM3_CONFIG);
-  std::string working_dir = *KNOB(KNOB_DRAMSIM3_OUT);
+  std::string config_file = "./DDR5_8Gb_x8_1866.ini";
+  std::string working_dir = "../../macsim-stats/dramsim";
   m_dramsim = new MemorySystem(config_file, working_dir, NULL, NULL);
 
   std::function<void(uint64_t)> read_cb;
@@ -93,16 +90,9 @@ void dram_dramsim3_c::init(int id) {
   m_id = id;
 }
 
-void dram_dramsim3_c::run_a_cycle(bool pll_lock) {
-  if (*KNOB(KNOB_DEBUG_IO_SYS)) {
-    print_q();
-    m_simBase->m_ioctrl->m_cme->print_cxlt3_info();
-    m_simBase->m_ioctrl->m_rc->print_rc_info();
-  }
-
+void dram_dramsim3_c::run_a_cycle(bool temp) {
   send();
   m_dramsim->ClockTick();
-  cme_schedule();
   receive();
   ++m_cycle;
 }
@@ -123,11 +113,6 @@ void dram_dramsim3_c::read_callback(unsigned id, uint64_t address) {
         m_output_buffer->push_back(req);
       }
       m_pending_request->remove(req);
-
-      STAT_EVENT(AVG_DIMM_TURN_LATENCY_BASE);
-      STAT_EVENT_N(AVG_DIMM_TURN_LATENCY, m_cycle - req->m_insert_cycle);
-      STAT_EVENT(AVG_DIMM_RD_TURN_LATENCY_BASE);
-      STAT_EVENT_N(AVG_DIMM_RD_TURN_LATENCY, m_cycle - req->m_insert_cycle);
 
       // return first request with matching address
       // this may not necessarily be true but this is the best we can do
@@ -150,11 +135,6 @@ void dram_dramsim3_c::write_callback(unsigned id, uint64_t address) {
       MEMORY->free_req(req->m_core_id, req);
       m_pending_request->remove(req);
 
-      STAT_EVENT(AVG_DIMM_TURN_LATENCY_BASE);
-      STAT_EVENT_N(AVG_DIMM_TURN_LATENCY, m_cycle - req->m_insert_cycle);
-      STAT_EVENT(AVG_DIMM_WR_TURN_LATENCY_BASE);
-      STAT_EVENT_N(AVG_DIMM_WR_TURN_LATENCY, m_cycle - req->m_insert_cycle);
-
       // return first request with matching address
       // this may not necessarily be true but this is the best we can do
       // at this point
@@ -167,28 +147,25 @@ void dram_dramsim3_c::receive(void) {
   mem_req_s* req = NETWORK->receive(MEM_MC, m_id);
   if (!req) return;
 
-  if (insert_new_req(req)) {
+  uint64_t addr = static_cast<uint64_t>(req->m_addr);
+  bool is_write = req->m_type == MRT_WB;
+  bool will_accept = m_dramsim->WillAcceptTransaction(addr, is_write);
+
+  if (will_accept) {
+    m_dramsim->AddTransaction(addr, is_write);
+
+    STAT_EVENT(TOTAL_DRAM);
+    m_pending_request->push_back(req);
     NETWORK->receive_pop(MEM_MC, m_id);
     if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
       m_simBase->m_bug_detector->deallocate_noc(req);
-    }
-
-    STAT_EVENT(TOTAL_DRAM);
-
-    // Get address range (Debug purpose)
-    if (*KNOB(KNOB_DEBUG_IO_SYS)) {
-      if (m_accessed_addr.find(req->m_addr) == m_accessed_addr.end()) {
-        m_accessed_addr.insert(req->m_addr);
-      }
     }
   }
 }
 
 void dram_dramsim3_c::send(void) {
   vector<mem_req_s*> temp_list;
-  vector<mem_req_s*> cme_temp_list;
 
-  // take care of DIMM requests
   for (auto I = m_tmp_output_buffer->begin(), E = m_tmp_output_buffer->end();
        I != E; ++I) {
     mem_req_s* req = *I;
@@ -208,8 +185,6 @@ void dram_dramsim3_c::send(void) {
        ++I) {
     mem_req_s* req = (*I);
     req->m_msg_type = NOC_FILL;
-    req->m_noc_cycle = m_cycle;
-
     bool insert_packet =
       NETWORK->send(req, MEM_MC, m_id, MEM_LLC, req->m_cache_id[MEM_LLC]);
 
@@ -228,154 +203,6 @@ void dram_dramsim3_c::send(void) {
   for (auto I = temp_list.begin(), E = temp_list.end(); I != E; ++I) {
     m_output_buffer->remove((*I));
   }
-
-  // take care of CME requests
-  for (auto I = m_cmeout_buffer->begin(), E = m_cmeout_buffer->end(); I != E;
-      ++I) {
-    mem_req_s* req = (*I);
-    req->m_state = CME_PCIE_DONE;
-    req->m_msg_type = NOC_FILL;
-    req->m_noc_cycle = m_cycle;
-
-    bool insert_packet = 
-      NETWORK->send(req, MEM_MC, m_id, MEM_LLC, req->m_cache_id[MEM_LLC]);
-
-    if (!insert_packet) {
-      DEBUG("MC[%d] req:%d addr:0x%llx type:%s noc busy\n", m_id, req->m_id,
-          req->m_addr, mem_req_c::mem_req_type_name[req->m_type]);
-      break;
-    }
-
-    cme_temp_list.push_back(req);
-    if (*KNOB(KNOB_BUG_DETECTOR_ENABLE) && *KNOB(KNOB_ENABLE_NEW_NOC)) {
-      m_simBase->m_bug_detector->allocate_noc(req);
-    }
-  }
-
-  for (auto I = cme_temp_list.begin(), E = cme_temp_list.end(); I != E; ++I) {
-    m_cmeout_buffer->remove((*I));
-  }
-}
-
-// TODO : sophisticated interleaving policy is required
-// FIXME : Don't need to use cme_entry_s, change this to mem_req_s
-bool dram_dramsim3_c::insert_new_req(mem_req_s* mem_req) {
-  Addr addr = mem_req->m_addr;
-  bool is_write = (mem_req->m_type == MRT_WB);
-
-  // insert to CME
-  if (addr >= *KNOB(KNOB_CME_RANGE) && *KNOB(KNOB_CME_ENABLE)) {
-    if (m_cme_free_list->empty()) {
-      return false;
-    } else {
-      cme_entry_s* new_entry = m_cme_free_list->front();
-      new_entry->set(mem_req, m_simBase->m_core_cycle[mem_req->m_core_id]);
-      m_cmein_buffer->push_back(new_entry);
-      m_cme_free_list->pop_front();
-
-      mem_req->m_cmereq = true;
-      return true;
-    }
-  }
-  // insert to DIMM
-  else {
-    uint64_t addr_ = static_cast<uint64_t>(addr);
-    bool will_accept = m_dramsim->WillAcceptTransaction(addr_, is_write);
-
-    if (will_accept) {
-      m_dramsim->AddTransaction(addr_, is_write);
-      m_pending_request->push_back(mem_req);
-      mem_req->m_insert_cycle = m_cycle;
-      mem_req->m_cmereq = false;
-      return true;
-    } else {
-      return false;
-    }
-  }
-}
-
-void dram_dramsim3_c::cme_schedule() {
-  pcie_rc_c* root_complex = m_simBase->m_ioctrl->m_rc;
-  vector<cme_entry_s*> tmp_list;
-
-  if (!(*KNOB(KNOB_CME_ENABLE))) {
-    assert(m_cmein_buffer->size() == 0);
-    assert(root_complex->pop_request() == NULL);
-    return;
-  }
-
-  // incoming CME requests
-  for (auto I = m_cmein_buffer->begin(), E = m_cmein_buffer->end(); I != E; 
-      ++I) {
-    mem_req_s* req = (*I)->m_req;
-    root_complex->insert_request(req);
-    m_cmepend_buffer->push_back(req);
-    tmp_list.push_back(*I);
-
-    req->m_insert_cycle = m_cycle;
-  }
-
-  for (auto I = tmp_list.begin(), E = tmp_list.end(); I != E; ++I) {
-      m_cmein_buffer->remove((*I));
-    STAT_EVENT(TOTAL_DRAM_MERGE);
-    (*I)->reset();
-    m_cme_free_list->push_back((*I));
-  }
-
-  // returned CME requests
-  while (1) {
-    mem_req_s* req = root_complex->pop_request();
-    if (!req) {
-      break;
-    }
-
-    m_cmeout_buffer->push_back(req);
-    m_cmepend_buffer->remove(req);
-
-    STAT_EVENT(AVG_CME_TURN_LATENCY_BASE);
-    STAT_EVENT_N(AVG_CME_TURN_LATENCY, m_cycle - req->m_insert_cycle);
-    if (req->m_type == MRT_WB) {
-      STAT_EVENT(AVG_CME_WR_TURN_LATENCY_BASE);
-      STAT_EVENT_N(AVG_CME_WR_TURN_LATENCY, m_cycle - req->m_insert_cycle);
-    } else {
-      STAT_EVENT(AVG_CME_RD_TURN_LATENCY_BASE);
-      STAT_EVENT_N(AVG_CME_RD_TURN_LATENCY, m_cycle - req->m_insert_cycle);
-    }
-  }
-}
-
-void dram_dramsim3_c::print_q() {
-  std::cout << "-------------- DRAMSim3 ------------------" << std::endl;
-
-  std::cout << "cme free buffer entries" << ": " << std::dec <<
-    m_cme_free_list->size() << std::endl;
-
-  std::cout << "cme in buffer" << ": ";
-  for (auto req : *m_cmein_buffer) {
-    std::cout << std::hex << req->m_req->m_addr << " ; ";
-  }
-  
-  std::cout << "cme pend buffer" << ": ";
-  for (auto req : *m_cmepend_buffer) {
-    std::cout << std::hex << req->m_addr << " ; ";
-  }
-
-  std::cout << "cme out buffer" << ": ";
-  for (auto req : *m_cmeout_buffer) {
-    std::cout << std::hex << req->m_addr << " ; ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "dimm pend buffer" << ": ";
-  for (auto req : *m_pending_request) {
-    std::cout << std::hex << req->m_addr << " ; ";
-  }
-
-  std::cout << "dimm out buffer" << ": ";
-  for (auto req : *m_output_buffer) {
-    std::cout << std::hex << req->m_addr << " ; ";
-  }
-  std::cout << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
