@@ -541,6 +541,7 @@ void macsim_c::init_network(void) {
 // =======================================
 void macsim_c::init_io(int argc, char** argv) {
 #ifdef CXL
+  std::cout << "Initialize CXL Simulator" << std::endl;
   m_mxp = new cxlsim::mxp_wrapper_c();
   m_mxp->init(argc, argv);
 #endif
