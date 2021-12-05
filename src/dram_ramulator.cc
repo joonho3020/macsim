@@ -43,8 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "memory.h"
 #include "network.h"
 #include "statistics.h"
-#include "ioctrl.h"
-#include "pcie_rc.h"
+#include "mxp_wrapper.h"
 
 #include "dram_ramulator.h"
 #include "ramulator/src/Request.h"
@@ -57,7 +56,7 @@ using namespace ramulator;
 dram_ramulator_c::dram_ramulator_c(macsim_c *simBase)
   : dram_c(simBase),
     ramu_requestsInFlight(0),
-    cme_requestsInFlight(0),
+    mxp_requestsInFlight(0),
     wrapper(NULL),
     read_cb_func(
       std::bind(&dram_ramulator_c::readComplete, this, std::placeholders::_1)),
@@ -84,7 +83,7 @@ void dram_ramulator_c::init(int id) {
 void dram_ramulator_c::print_req(void) {
   std::cout << "---- DIMM ----" << std::endl;
   std::cout << std::dec << "DIMM reqs: " << ramu_requestsInFlight << " "
-                        << "CME reqs: " << cme_requestsInFlight << std::endl;
+                        << "MXP reqs: " << mxp_requestsInFlight << std::endl;
 
   std::cout << "Read q" << std::endl;
   for (auto iter : ramu_reads) {
@@ -114,8 +113,8 @@ void dram_ramulator_c::print_req(void) {
   }
   std::cout << std::endl;
 
-  std::cout << "cme resp q" << std::endl;
-  for (auto req : cme_resp_queue) {
+  std::cout << "mxp resp q" << std::endl;
+  for (auto req : mxp_resp_queue) {
     std::cout << std::hex << req->m_addr << "; ";
   }
   std::cout << std::endl;
@@ -175,7 +174,7 @@ void dram_ramulator_c::writeComplete(ramulator::Request &ramu_req) {
 
 void dram_ramulator_c::send(void) {
   send_ramu_req();
-  send_cme_req();
+  send_mxp_req();
 }
 
 void dram_ramulator_c::send_ramu_req() {
@@ -198,38 +197,39 @@ void dram_ramulator_c::send_ramu_req() {
   }
 }
 
-void dram_ramulator_c::send_cme_req() {
+void dram_ramulator_c::send_mxp_req() {
 #ifdef CXL
-  pcie_rc_c* root_complex = m_simBase->m_ioctrl->m_rc;
+  auto wrapper = m_simBase->m_mxp;
 
-  // returned CME requests
+  // returned MXP requests
   while (1) {
-    mem_req_s* req = root_complex->pop_request();
+    void* req = wrapper->pull_done_reqs();
     if (!req) {
       break;
     } else {
-      assert(req->m_type != MRT_WB);
+      mem_req_s* memreq = static_cast<mem_req_s*>(req);
+      assert(memreq->m_type != MRT_WB);
 
-      cme_resp_queue.push_back(req);
-      cme_requestsInFlight--;
+      mxp_resp_queue.push_back(memreq);
+      mxp_requestsInFlight--;
 
-      req->m_state = CME_REQ_DONE;
+      memreq->m_state = MXP_REQ_DONE;
 
       // update return latency related stats
-      STAT_EVENT(AVG_CME_RD_TURN_LATENCY_BASE);
-      STAT_EVENT_N(AVG_CME_RD_TURN_LATENCY, 
-          m_simBase->m_core_cycle[req->m_core_id] - req->m_insert_cycle);
+      STAT_EVENT(AVG_MXP_RD_TURN_LATENCY_BASE);
+      STAT_EVENT_N(AVG_MXP_RD_TURN_LATENCY, 
+          m_simBase->m_core_cycle[memreq->m_core_id] - memreq->m_insert_cycle);
     }
   }
 
-  if (cme_resp_queue.empty()) return;
+  if (mxp_resp_queue.empty()) return;
 
-  for (auto i = cme_resp_queue.begin(); i != cme_resp_queue.end(); ++i) {
+  for (auto i = mxp_resp_queue.begin(); i != mxp_resp_queue.end(); ++i) {
     mem_req_s *req = *i;
     req->m_msg_type = NOC_FILL;
     if (NETWORK->send(req, MEM_MC, m_id, MEM_LLC, req->m_cache_id[MEM_LLC])) {
       DEBUG("Response to 0x%llx sent. req:%d\n", req->m_addr, req->m_id);
-      cme_resp_queue.pop_front();
+      mxp_resp_queue.pop_front();
 
       if (*KNOB(KNOB_BUG_DETECTOR_ENABLE) && *KNOB(KNOB_ENABLE_NEW_NOC)) {
         m_simBase->m_bug_detector->allocate_noc(req);
@@ -247,8 +247,8 @@ void dram_ramulator_c::receive(void) {
   if (!req) return;
 
   long addr = static_cast<long>(req->m_addr);
-  if ((addr > *KNOB(KNOB_CME_RANGE)) && *KNOB(KNOB_CME_ENABLE)) {
-    receive_cme_req(req);
+  if ((addr > *KNOB(KNOB_MXP_RANGE)) && *KNOB(KNOB_MXP_ENABLE)) {
+    receive_mxp_req(req);
   } else {
     receive_ramu_req(req);
   }
@@ -300,31 +300,29 @@ void dram_ramulator_c::receive_ramu_req(mem_req_s* req) {
   }
 }
 
-void dram_ramulator_c::receive_cme_req(mem_req_s* req) {
+void dram_ramulator_c::receive_mxp_req(mem_req_s* req) {
 #ifdef CXL
-  pcie_rc_c* root_complex = m_simBase->m_ioctrl->m_rc;
-  root_complex->insert_request(req);
+  auto wrapper = m_simBase->m_mxp;
 
-  req->m_cmereq = true;
-  req->m_state = CME_PCIE_SENDING;
-  req->m_insert_cycle = m_simBase->m_core_cycle[req->m_core_id];
+  if (wrapper->insert_request(req->m_addr, (req->m_type == MRT_WB), (void*)req)) {
+    req->m_mxpreq = true;
+    req->m_state = MXP_REQ_START;
+    req->m_insert_cycle = m_simBase->m_core_cycle[req->m_core_id];
 
-  // added counter to track requests in flight
-  if (req->m_type != MRT_WB) {
-    ++cme_requestsInFlight;
-  }
+    ++mxp_requestsInFlight;
 
-  NETWORK->receive_pop(MEM_MC, m_id);
-  if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
-    m_simBase->m_bug_detector->deallocate_noc(req);
-  }
+    NETWORK->receive_pop(MEM_MC, m_id);
+    if (*KNOB(KNOB_BUG_DETECTOR_ENABLE)) {
+      m_simBase->m_bug_detector->deallocate_noc(req);
+    }
 
-  STAT_EVENT(MEM_REQ_BASE);
-  STAT_EVENT(CME_REQ_RATIO);
-  if (m_access_dist.find(req->m_addr) == m_access_dist.end()) {
-    m_access_dist[req->m_addr] = 1;
-  } else {
-    m_access_dist[req->m_addr]++;
+    STAT_EVENT(MEM_REQ_BASE);
+    STAT_EVENT(MXP_REQ_RATIO);
+    if (m_access_dist.find(req->m_addr) == m_access_dist.end()) {
+      m_access_dist[req->m_addr] = 1;
+    } else {
+      m_access_dist[req->m_addr]++;
+    }
   }
 #endif
 }

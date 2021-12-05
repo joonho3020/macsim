@@ -25,7 +25,7 @@ sst-unit-test/*.out
 .ccls-cache/
 *.swp
 tags
-.gdb_history
+bin/.gdb_history
 bin/params.out
 *.out
 build

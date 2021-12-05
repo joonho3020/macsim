@@ -66,8 +66,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "dram.h"
 #include "dyfr.h"
 #include "mmu.h"
-#include "ioctrl.h"
-#include "cxl_t3.h"
+#include "mxp_wrapper.h"
 
 #include "all_knobs.h"
 #include "all_stats.h"
@@ -540,10 +539,10 @@ void macsim_c::init_network(void) {
 // =======================================
 // initialize IO
 // =======================================
-void macsim_c::init_io(void) {
+void macsim_c::init_io(int argc, char** argv) {
 #ifdef CXL
-  m_ioctrl = new ioctrl_c(m_simBase);
-  m_ioctrl->initialize();
+  m_mxp = new cxlsim::mxp_wrapper_c();
+  m_mxp->init(argc, argv);
 #endif
 }
 
@@ -777,7 +776,7 @@ void macsim_c::initialize(int argc, char** argv) {
   m_MMU->initialize(m_simBase);
 
   // initialize IO
-  init_io();
+  init_io(argc, argv);
 
   // open traces
   string trace_name_list = static_cast<string>(*KNOB(KNOB_TRACE_NAME_FILE));
@@ -918,13 +917,8 @@ int macsim_c::run_a_cycle() {
 #ifdef CXL
   // run IO hierarchy
   if (m_clock_internal == m_domain_next[CLOCK_IO]) {
-    m_ioctrl->run_a_cycle(pll_locked);
+    m_mxp->run_a_cycle(pll_locked);
     GET_NEXT_CYCLE(CLOCK_IO);
-  }
-
-  // run dram inside cxl memory expander
-  if (m_clock_internal == m_domain_next[CLOCK_MC]) {
-    m_ioctrl->m_cme->run_a_cycle_internal(pll_locked);
   }
 #endif
 
@@ -1072,6 +1066,10 @@ void macsim_c::finalize() {
 
   // dump out stat files at the end of simulation
   m_ProcessorStats->saveStats();
+
+#ifdef CXL
+  m_mxp->m_cxlsim->finalize();
+#endif
 
   cout << "Done\n";
 }

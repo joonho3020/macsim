@@ -94,10 +94,8 @@ typedef enum Mem_Req_State_enum {
   MEM_DRAM_DONE,
   MEM_NOC_START,
   MEM_NOC_DONE,
-  CME_PCIE_SENDING,
-  CME_REQ_START,
-  CME_REQ_DONE,
-  CME_PCIE_RETURNING,
+  MXP_REQ_START,
+  MXP_REQ_DONE,
   MEM_STATE_MAX
 } Mem_Req_State;
 
@@ -173,8 +171,8 @@ typedef struct mem_req_s {
   bool m_skip; /**< llc skip bit */
   int m_noc_type; /**< noc request type: req or reply */
   Counter m_noc_cycle; /**< noc start cycle */
-  Counter m_insert_cycle; /**< request inserted to DIMM/CME */
-  bool m_cmereq; /**< request is served by CME */
+  Counter m_insert_cycle; /**< request inserted to DIMM/MXP */
+  bool m_mxpreq; /**< request is served by MXP */
   macsim_c* m_simBase; /**< reference to macsim base class for sim globals */
 
   function<bool(mem_req_s*)> m_done_func; /**< done function */

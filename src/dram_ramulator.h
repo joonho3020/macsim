@@ -48,7 +48,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "dram.h"
 #include "memreq_info.h"
 #include "network.h"
-#include "cxl_t3.h"
 #include "global_defs.h"
 
 class dram_ramulator_c : public dram_c
@@ -59,8 +58,8 @@ private:
   std::map<long, std::deque<mem_req_s *>> ramu_writes;
   std::deque<mem_req_s *> ramu_resp_queue;
 
-  unsigned int cme_requestsInFlight;
-  std::deque<mem_req_s *> cme_resp_queue;
+  unsigned int mxp_requestsInFlight;
+  std::deque<mem_req_s *> mxp_resp_queue;
 
   ramulator::Config configs;
   ramulator::RamulatorWrapper *wrapper;
@@ -85,14 +84,14 @@ private:
   // Receive a request to DIMM
   void receive_ramu_req(mem_req_s* req);
 
-  // Receive a request to CME
-  void receive_cme_req(mem_req_s* req);
+  // Receive a request to mxp
+  void receive_mxp_req(mem_req_s* req);
 
   // Send a request to DIMM
   void send_ramu_req(void);
 
-  // Send a request to CME
-  void send_cme_req(void);
+  // Send a request to mxp
+  void send_mxp_req(void);
 
 public:
   // Constructor

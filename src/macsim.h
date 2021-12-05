@@ -44,6 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "global_defs.h"
 #include "global_types.h"
+/* #include "mxp_wrapper.h" */
 
 #ifdef IRIS
 #include "manifold/kernel/include/kernel/clock.h"
@@ -146,7 +147,7 @@ public:
   /**
    * Initialize IO
    */
-  void init_io(void);
+  void init_io(int argc, char** argv);
 
   /**
    * Open trace files
@@ -302,7 +303,9 @@ public:
 
   dyfr_c *m_dyfr; /**< dynamic frequency class> */
   unique_ptr<MMU> m_MMU; /**< memory management unit> */
-  ioctrl_c *m_ioctrl; /**< io domain controller */
+#ifdef CXL
+  cxlsim::mxp_wrapper_c* m_mxp;
+#endif
 
 private:
   macsim_c *m_simBase; /**< self-reference for macro usage */

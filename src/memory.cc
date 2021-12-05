@@ -1983,7 +1983,7 @@ void memory_c::set_cache_id(mem_req_s* req) {
 void memory_c::free_req(int core_id, mem_req_s* req) {
   STAT_EVENT(AVG_MEMORY_LATENCY_BASE);
   STAT_EVENT_N(AVG_MEMORY_LATENCY, m_cycle - req->m_in);
-  if (!req->m_cmereq) {
+  if (!req->m_mxpreq) {
     STAT_EVENT(AVG_DIMM_LATENCY_BASE);
     STAT_EVENT_N(AVG_DIMM_LATENCY, m_cycle - req->m_in);
     if (req->m_type != MRT_WB) {
@@ -1994,14 +1994,14 @@ void memory_c::free_req(int core_id, mem_req_s* req) {
       STAT_EVENT_N(AVG_DIMM_WR_LATENCY, m_cycle - req->m_in);
     }
   } else {
-    STAT_EVENT(AVG_CME_LATENCY_BASE);
-    STAT_EVENT_N(AVG_CME_LATENCY, m_cycle - req->m_in);
+    STAT_EVENT(AVG_MXP_LATENCY_BASE);
+    STAT_EVENT_N(AVG_MXP_LATENCY, m_cycle - req->m_in);
     if (req->m_type != MRT_WB) {
-      STAT_EVENT(AVG_CME_RD_LATENCY_BASE);
-      STAT_EVENT_N(AVG_CME_RD_LATENCY, m_cycle - req->m_in);
+      STAT_EVENT(AVG_MXP_RD_LATENCY_BASE);
+      STAT_EVENT_N(AVG_MXP_RD_LATENCY, m_cycle - req->m_in);
     } else {
-      STAT_EVENT(AVG_CME_WR_LATENCY_BASE);
-      STAT_EVENT_N(AVG_CME_WR_LATENCY, m_cycle - req->m_in);
+      STAT_EVENT(AVG_MXP_WR_LATENCY_BASE);
+      STAT_EVENT_N(AVG_MXP_WR_LATENCY, m_cycle - req->m_in);
     }
   }
 
@@ -2028,16 +2028,16 @@ void memory_c::free_write_req(mem_req_s* req) {
   STAT_EVENT(AVG_MEMORY_LATENCY_BASE);
   STAT_EVENT_N(AVG_MEMORY_LATENCY, m_cycle - req->m_in);
 
-  if (!req->m_cmereq) {
+  if (!req->m_mxpreq) {
     STAT_EVENT(AVG_DIMM_LATENCY_BASE);
     STAT_EVENT_N(AVG_DIMM_LATENCY, m_cycle - req->m_in);
     STAT_EVENT(AVG_DIMM_WR_LATENCY_BASE);
     STAT_EVENT_N(AVG_DIMM_WR_LATENCY, m_cycle - req->m_in);
   } else {
-    STAT_EVENT(AVG_CME_LATENCY_BASE);
-    STAT_EVENT_N(AVG_CME_LATENCY, m_cycle - req->m_in);
-    STAT_EVENT(AVG_CME_WR_LATENCY_BASE);
-    STAT_EVENT_N(AVG_CME_WR_LATENCY, m_cycle - req->m_in);
+    STAT_EVENT(AVG_MXP_LATENCY_BASE);
+    STAT_EVENT_N(AVG_MXP_LATENCY, m_cycle - req->m_in);
+    STAT_EVENT(AVG_MXP_WR_LATENCY_BASE);
+    STAT_EVENT_N(AVG_MXP_WR_LATENCY, m_cycle - req->m_in);
   }
 
   m_mem_req_pool->release_entry(req);

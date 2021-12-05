@@ -237,6 +237,46 @@ if flags['ramulator'] == '1':
   env.Library('ramulator', ramulator_srcs, CPPDEFINES=['RAMULATOR'])
 
 #########################################################################################
+# CXLSim
+#########################################################################################
+cxlsim_srcs = [
+# 'src/CXLSim/src/ramulator/src/Config.cpp',
+# 'src/CXLSim/src/ramulator/src/Controller.cpp',
+# 'src/CXLSim/src/ramulator/src/DDR3.cpp',
+# 'src/CXLSim/src/ramulator/src/DDR4.cpp',
+# 'src/CXLSim/src/ramulator/src/GDDR5.cpp',
+# 'src/CXLSim/src/ramulator/src/Gem5Wrapper.cpp',
+# 'src/CXLSim/src/ramulator/src/HBM.cpp',
+# 'src/CXLSim/src/ramulator/src/LPDDR3.cpp',
+# 'src/CXLSim/src/ramulator/src/LPDDR4.cpp',
+# 'src/CXLSim/src/ramulator/src/MemoryFactory.cpp',
+# 'src/CXLSim/src/ramulator/src/SALP.cpp',
+# 'src/CXLSim/src/ramulator/src/WideIO.cpp',
+# 'src/CXLSim/src/ramulator/src/WideIO2.cpp',
+# 'src/CXLSim/src/ramulator/src/TLDRAM.cpp',
+# 'src/CXLSim/src/ramulator/src/ALDRAM.cpp',
+# 'src/CXLSim/src/ramulator/src/StatType.cpp',
+    'src/CXLSim/src/all_knobs.cc',
+    'src/CXLSim/src/all_stats.cc',
+    'src/CXLSim/src/core.cc',
+    'src/CXLSim/src/cxl_t3.cc',
+    'src/CXLSim/src/cxlsim.cc',
+    'src/CXLSim/src/knob.cc',
+    'src/CXLSim/src/packet_info.cc',
+    'src/CXLSim/src/pcie_endpoint.cc',
+    'src/CXLSim/src/pcie_rc.cc',
+    'src/CXLSim/src/ramulator_wrapper.cc',
+    'src/CXLSim/src/statistics.cc'
+]
+
+if flags['cxl'] == '1':
+  env['CPPDEFINES'] += ['CXL']
+  env['CPPDEFINES'] += ['RAMULATOR']
+  env['CPPPATH'] += ['#src/CXLSim']
+  env['LIBPATH'] += [Dir('.')]
+  env.Library('cxl', cxlsim_srcs, CPPDEFINES=['CXL', 'RAMULATOR'])
+
+#########################################################################################
 # MACSIM
 #########################################################################################
 macsim_src = [
@@ -301,17 +341,8 @@ macsim_src = [
   'src/tlb.cc',
   'src/ramulator_wrapper.cc',
   'src/dram_ramulator.cc',
-  'src/dram_dramsim.cc',
-  'src/dram_dramsim3.cc',
-  'src/pcie_endpoint.cc',
-  'src/pcie_rc.cc',
-  'src/cxl_t3.cc',
-  'src/ioctrl.cc',
-  'src/packet_info.cc'
+  'src/mxp_wrapper.cc'
 ]
-
-if flags['cxl'] == '1':
-    env['CPPDEFINES'].append('CXL')
 
 #########################################################################################
 # Libraries
@@ -352,6 +383,9 @@ if flags['qsim'] == '1':
 
 if flags['ramulator'] == '1':
   libraries.append('ramulator')
+
+if flags['cxl'] == '1':
+  libraries.append('cxl')
 
 env.Program(
     'macsim',

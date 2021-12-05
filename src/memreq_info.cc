@@ -60,10 +60,8 @@ const char* mem_req_c::mem_state[MEM_STATE_MAX] = {
   "MEM_DRAM_DONE",
   "MEM_NOC_START",
   "MEM_NOC_DONE",
-  "CME_PCIE_SENDING",
-  "CME_REQ_START",
-  "CME_REQ_DONE",
-  "CME_PCIE_RETURNING"
+  "MXP_REQ_START",
+  "MXP_REQ_DONE"
 };
 
 mem_req_s::mem_req_s(macsim_c* simBase) {
@@ -101,5 +99,5 @@ void mem_req_s::init(void) {
   m_bypass = 0;
   m_noc_cycle = 0;
   m_insert_cycle = 0;
-  m_cmereq = false;
+  m_mxpreq = false;
 }

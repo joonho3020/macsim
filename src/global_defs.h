@@ -118,6 +118,12 @@ class cache_partition_framework_c;
 class dyfr_c;
 class MMU;
 
+#ifdef CXL
+namespace cxlsim {
+class mxp_wrapper_c;
+}
+#endif
+
 template <class T>
 class pqueue_c;
 template <typename T>
