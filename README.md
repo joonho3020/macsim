@@ -2,17 +2,31 @@
 ## CXL Branch Usage
 - Quick start
 ```{bash}
+# Setup macsim
 git clone https://github.com/snu-comparch/macsim.git
 git checkout cxl
-git submodule init
-git submodule update src/ramulator
+git submodule update --init src/ramulator
+git submodule update --init src/CXLSim
 cd scripts
 ./knobgen.pl
 ./statgen.pl
 cd ..
+
+# Setup CXLsim
+cd src/CXLSim
+git submodule update --init src/ramulator
+cp bin/cxl_params.in ../../../bin
+cd scripts
+./knobgen.pl
+./statgen.pl
+cd ../../../
+
 ./build.py --ramulator --cxl
 cp src/ramulator/configs/* ./bin
+
+# Additionally, don't forget to make the trace_file_list & set the macsim knobs to enable CXL
 ```
+- additionally, don't forget to set the macsim knobs to enable cxl -> mxp_enable & mxp_addr_min
 
 ## Introduction
 
