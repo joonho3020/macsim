@@ -14,6 +14,21 @@ cd ..
 cp src/ramulator/configs/* ./bin
 ```
 
+## TODO
+- Trace generation
+  - Mark ROI for traces
+- Core
+  - When the first instruction of ROI is fetched?
+    - Dispatch them to CXLSim
+    - For these instructions, don't consider dependency w.r.t instructions preceding ROI
+  - Retire instructions in CXLSim
+  - After ROI passes, fetch & dispatch instructions to ROB
+    - If there are instructions that are dependent on instructions in the ROI, just ignore the dependencies
+- CXLSim
+  - Add dispatch queue
+  - Add NDP & compute units (how to implement ports?)
+  - Add instruction retirement logic
+
 ## Introduction
 
 * MacSim is a heterogeneous architecture timing model simulator that is
@@ -102,7 +117,3 @@ cmake ..
 make -j<cores>
 make install
 ```
-
-## TODOs
-- Interleaving policy btw DIMM & CME
-- Model PCIe flow control & ack, nack protocols (?)
