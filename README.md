@@ -14,6 +14,9 @@ cd ..
 cp src/ramulator/configs/* ./bin
 ```
 
+## Generating traces for NDP
+`pin -t ./tools/x86_trace_generator/obj-intel64/trace_generator.so -manual 1 -roi 1 -- <binary>`
+
 ## TODO
 - Trace generation
   - Mark ROI for traces
