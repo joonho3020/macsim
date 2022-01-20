@@ -30,6 +30,7 @@ void run_other() {
 
 void run_bfs() {
   ROI_START(1);
+  printf("start graph traversal\n");
   for (int i = 0; i < V; i++) {
     int cur_node = i + 1;
     if (visit[cur_node]) continue;
