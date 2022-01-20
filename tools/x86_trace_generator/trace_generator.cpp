@@ -165,6 +165,9 @@ bool sim_end[MAX_THREADS] = {false};
 bool thread_flushed[MAX_THREADS] = {false};
 Knob(bool, Knob_manual_simpoint, "manual", "0", "start/stop trace generation at manually added SIM_BEGIN()/SIM_END function call");
 
+bool record_roi[MAX_THREADS] = {false};
+Knob(bool, Knob_enable_roi, "roi", "0", "start/stop roi record by manually adding ROI_START, ROI_END");
+
 // variables for HMC 2.0 atomic instruction simulations
 // should be disabled in normal cases
 typedef struct hmc_info_t
@@ -876,6 +879,11 @@ void instrument(INS ins)
                    IARG_THREAD_ID, IARG_END);
   }
 
+  if (Knob_enable_roi.Value() && record_roi[tid]) 
+  {
+    info->is_roi = true;
+  }
+
   // ----------------------------------------
   // add a static instruction (per thread id)
   // ----------------------------------------
@@ -1386,6 +1394,27 @@ VOID RtnHMC(CHAR *name, ADDRINT func, ADDRINT ret, ADDRINT target_addr)
   hmc_target_addr = target_addr;
   curr_caller_pc = pc;
 }
+
+VOID RtnROIStart(ADDRINT arg) {
+  if (arg == 0 || !Knob_enable_roi.Value())
+    return;
+
+  THREADID tid = threadMap[PIN_ThreadId()];
+  cout << "Start ROI for tid : " << tid << endl;
+  record_roi[tid] = true;
+}
+
+VOID RtnROIEnd(ADDRINT arg)
+{
+  if (arg == 0 || !Knob_enable_roi.Value())
+    return;
+
+  THREADID tid = threadMap[PIN_ThreadId()];
+  cout << "End ROI for tid : " << tid << endl;
+  assert(record_roi[tid]);
+  record_roi[tid] = false;
+}
+
 VOID Image(IMG img, VOID *v)
 {
   RTN rtn = RTN_FindByName(img, "SIM_BEGIN");
@@ -1403,6 +1432,23 @@ VOID Image(IMG img, VOID *v)
     RTN_InsertCall(rtn2, IPOINT_BEFORE, (AFUNPTR)RtnEnd,
                    IARG_FUNCARG_ENTRYPOINT_VALUE, 0, IARG_END);
     RTN_Close(rtn2);
+  }
+
+  RTN roi_start_rtn = RTN_FindByName(img, "ROI_START");
+  if (RTN_Valid(roi_start_rtn)) 
+  {
+    RTN_Open(roi_start_rtn);
+    RTN_InsertCall(roi_start_rtn, IPOINT_AFTER, (AFUNPTR)RtnROIStart,
+        IARG_FUNCRET_EXITPOINT_VALUE, IARG_END);
+    RTN_Close(roi_start_rtn);
+  }
+
+  RTN roi_end_rtn = RTN_FindByName(img, "ROI_END");
+  if (RTN_Valid(roi_end_rtn)) {
+    RTN_Open(roi_end_rtn);
+    RTN_InsertCall(roi_end_rtn, IPOINT_BEFORE, (AFUNPTR)RtnROIEnd,
+        IARG_FUNCARG_ENTRYPOINT_VALUE, 0, IARG_END);
+    RTN_Close(roi_end_rtn);
   }
 
   // HMC atomic functions
