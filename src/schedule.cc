@@ -34,12 +34,15 @@ POSSIBILITY OF SUCH DAMAGE.
  * Description  : schedule instructions
  *********************************************************************************************/
 
+#include <vector>
+
 #include "schedule.h"
 #include "uop.h"
 #include "rob.h"
 #include "exec.h"
 #include "core.h"
 #include "statistics.h"
+#include "mxp_wrapper.h"
 
 #include "config.h"
 
@@ -326,10 +329,44 @@ bool schedule_c::uop_schedule(int entry, SCHED_FAIL_TYPE* sched_fail_reason) {
 }
 
 void schedule_c::advance_roi(int q_index) {
+#ifdef CXL
+  // Initialize the m_count array with zeros
   fill_n(m_count, static_cast<std::size_t>(max_ALLOCQ), 0);
 
+  m_cur_core_cycle = m_simBase->m_core_cycle[m_core_id];
+
+  // Iterate until alloc queue has ready members
   while (m_alloc_q[q_index]->ready()) {
+    int entry = (int)m_alloc_q[q_index]->peek(0);
+
+    ALLOCQ_Type q_type = (*m_rob)[entry]->m_allocq_num;
+    uop_c* cur_uop = (uop_c*)(*m_rob)[entry];
+
+    // Check if the entry has been flushed. If so just move ahead.
+    if (cur_uop->m_bogus || (cur_uop->m_done_cycle)) {
+      cur_uop->m_done_cycle = (m_simBase->m_core_cycle[m_core_id]);
+      continue;
+    }
+
+    auto wrapper = m_simBase->m_mxp;
+    if (wrapper->insert_request(0, 0, true, (void*)cur_uop)) {
+      // dequeue element
+      m_alloc_q[q_index]->dequeue();
+
+
+      ++m_count[q_type];
+
+      cur_uop->m_in_iaq = false;
+      cur_uop->m_in_scheduler = true;
+
+      cur_uop->m_sched_cycle = m_cur_core_cycle;
+      cur_uop->m_exec_cycle = m_cur_core_cycle;
+/* ++m_num_in_sched; */
+    } else { // cannot schedule more uops because of MXP BW
+      break;
+    }
   }
+#endif
 }
 
 void schedule_c::advance_non_roi(int q_index) {

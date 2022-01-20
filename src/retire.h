@@ -211,6 +211,8 @@ private:
   uint16_t get_min_wb(Counter& age);
   bool check_ld_ordering_wb(uop_c* uop);
 
+  void process_done_uops(void);
+
 private:
   RETIRE_INTERFACE_DECL(); /**< declaration macro */
 

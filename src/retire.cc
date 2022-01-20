@@ -82,6 +82,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "resource.h"
 #include "rob_smc.h"
 #include "uop.h"
+#include "mxp_wrapper.h"
 
 #include "config.h"
 
@@ -125,6 +126,8 @@ void retire_c::run_a_cycle() {
     return;
   }
 
+  process_done_uops();
+
   m_cur_core_cycle = m_simBase->m_core_cycle[m_core_id];
   core_c* core = m_simBase->m_core_pointers[m_core_id];
 
@@ -167,93 +170,98 @@ void retire_c::run_a_cycle() {
 
       cur_uop = rob->front();
 
-      // uncompleted memory store UOPs can be placed in write buffer
-      if (KNOB(KNOB_USE_WB)->getValue() && cur_uop->m_mem_type == MEM_ST &&
-          cur_uop->m_exec_cycle != 0) {
-        // write buffer full
-        if (m_write_buffer.size() == KNOB(KNOB_WB_SIZE)->getValue()) {
-          STAT_CORE_EVENT(cur_uop->m_core_id, WB_FULL);
-          break;
-        }
+      if (cur_uop->m_is_roi) {
+        rob->pop();
+      } else {
 
-        insert_wb(cur_uop);
-      }
-
-      // uop cannot be retired
-      else if (!cur_uop->m_done_cycle || !cur_uop->m_exec_cycle ||
-               cur_uop->m_done_cycle > m_cur_core_cycle) {
-        if (cur_uop->m_uop_type == UOP_FULL_FENCE ||
-            cur_uop->m_uop_type == UOP_ACQ_FENCE ||
-            cur_uop->m_uop_type == UOP_REL_FENCE) {
-          STAT_EVENT(FENCE_HEAD_ROB_WAIT);
-        }
-        break;
-      }
-
-      if (cur_uop->m_mem_type == MEM_ST) {
-        STAT_CORE_EVENT_N(cur_uop->m_core_id, STORE_RES,
-                          m_cur_core_cycle - cur_uop->m_alloc_cycle);
-        STAT_CORE_EVENT(cur_uop->m_core_id, STORE_NUM);
-
-        if (cur_uop->m_dep_on_hmc_inst) {
-          STAT_CORE_EVENT_N(cur_uop->m_core_id, HMC_DEP_UOP_CYC_TOT,
-                            m_cur_core_cycle - cur_uop->m_alloc_cycle);
-          STAT_CORE_EVENT_N(cur_uop->m_core_id, HMC_DEP_UOP_RETIRE_COUNT, 1);
-        }
-      } else if (cur_uop->m_mem_type == MEM_LD) {
-        // check if load can be retired before any previous stores
-        if (check_ld_ordering_wb(cur_uop)) {
-          STAT_EVENT(RETIRE_SPECLD_NUM);
-          break;
-        }
-      }
-
-      if (KNOB(KNOB_FENCE_ENABLE)->getValue() &&
-          (cur_uop->m_uop_type == UOP_FULL_FENCE ||
-           cur_uop->m_uop_type == UOP_ACQ_FENCE ||
-           cur_uop->m_uop_type == UOP_REL_FENCE)) {
-        ASSERT(rob->is_fence_active());
-
-        // STAT_CORE_EVENT(cur_uop->m_core_id, DYN_FENCE_NUM);
-        // STAT_EVENT(DYN_FENCE_NUM);
-
-        DEBUG_CORE(
-          cur_uop->m_core_id,
-          "thread_id:%d uop_num:%llu inst_num:%llu fence operations \n",
-          cur_uop->m_thread_id, cur_uop->m_uop_num, cur_uop->m_inst_num);
-
-        if (KNOB(KNOB_ACQ_REL)->getValue()) {
-          fence_type ft;
-          switch (cur_uop->m_uop_type) {
-            case UOP_ACQ_FENCE:
-              ft = FENCE_ACQUIRE;
-              break;
-            case UOP_REL_FENCE:
-              ft = FENCE_RELEASE;
-              break;
-            case UOP_FULL_FENCE:
-              ft = FENCE_FULL;
-              break;
-            default:
-              ASSERT(false);
-              break;
+        // uncompleted memory store UOPs can be placed in write buffer
+        if (KNOB(KNOB_USE_WB)->getValue() && cur_uop->m_mem_type == MEM_ST &&
+            cur_uop->m_exec_cycle != 0) {
+          // write buffer full
+          if (m_write_buffer.size() == KNOB(KNOB_WB_SIZE)->getValue()) {
+            STAT_CORE_EVENT(cur_uop->m_core_id, WB_FULL);
+            break;
           }
-          rob->del_fence_entry(ft);
-        } else {
-          rob->del_fence_entry(FENCE_FULL);
+
+          insert_wb(cur_uop);
         }
-        STAT_CORE_EVENT_N(cur_uop->m_core_id, FENCE_TOT_CYCLES,
-                          m_cur_core_cycle - cur_uop->m_alloc_cycle);
-        STAT_CORE_EVENT_N(cur_uop->m_core_id, FENCE_EXEC_CYCLES,
-                          m_cur_core_cycle - cur_uop->m_sched_cycle);
 
-        // update the uop version information
-        rob->update_root(cur_uop);
+        // uop cannot be retired
+        else if (!cur_uop->m_done_cycle || !cur_uop->m_exec_cycle ||
+            cur_uop->m_done_cycle > m_cur_core_cycle) {
+          if (cur_uop->m_uop_type == UOP_FULL_FENCE ||
+              cur_uop->m_uop_type == UOP_ACQ_FENCE ||
+              cur_uop->m_uop_type == UOP_REL_FENCE) {
+            STAT_EVENT(FENCE_HEAD_ROB_WAIT);
+          }
+          break;
+        }
+
+        if (cur_uop->m_mem_type == MEM_ST) {
+          STAT_CORE_EVENT_N(cur_uop->m_core_id, STORE_RES,
+              m_cur_core_cycle - cur_uop->m_alloc_cycle);
+          STAT_CORE_EVENT(cur_uop->m_core_id, STORE_NUM);
+
+          if (cur_uop->m_dep_on_hmc_inst) {
+            STAT_CORE_EVENT_N(cur_uop->m_core_id, HMC_DEP_UOP_CYC_TOT,
+                m_cur_core_cycle - cur_uop->m_alloc_cycle);
+            STAT_CORE_EVENT_N(cur_uop->m_core_id, HMC_DEP_UOP_RETIRE_COUNT, 1);
+          }
+        } else if (cur_uop->m_mem_type == MEM_LD) {
+          // check if load can be retired before any previous stores
+          if (check_ld_ordering_wb(cur_uop)) {
+            STAT_EVENT(RETIRE_SPECLD_NUM);
+            break;
+          }
+        }
+
+        if (KNOB(KNOB_FENCE_ENABLE)->getValue() &&
+            (cur_uop->m_uop_type == UOP_FULL_FENCE ||
+             cur_uop->m_uop_type == UOP_ACQ_FENCE ||
+             cur_uop->m_uop_type == UOP_REL_FENCE)) {
+          ASSERT(rob->is_fence_active());
+
+          // STAT_CORE_EVENT(cur_uop->m_core_id, DYN_FENCE_NUM);
+          // STAT_EVENT(DYN_FENCE_NUM);
+
+          DEBUG_CORE(
+              cur_uop->m_core_id,
+              "thread_id:%d uop_num:%llu inst_num:%llu fence operations \n",
+              cur_uop->m_thread_id, cur_uop->m_uop_num, cur_uop->m_inst_num);
+
+          if (KNOB(KNOB_ACQ_REL)->getValue()) {
+            fence_type ft;
+            switch (cur_uop->m_uop_type) {
+              case UOP_ACQ_FENCE:
+                ft = FENCE_ACQUIRE;
+                break;
+              case UOP_REL_FENCE:
+                ft = FENCE_RELEASE;
+                break;
+              case UOP_FULL_FENCE:
+                ft = FENCE_FULL;
+                break;
+              default:
+                ASSERT(false);
+                break;
+            }
+            rob->del_fence_entry(ft);
+          } else {
+            rob->del_fence_entry(FENCE_FULL);
+          }
+          STAT_CORE_EVENT_N(cur_uop->m_core_id, FENCE_TOT_CYCLES,
+              m_cur_core_cycle - cur_uop->m_alloc_cycle);
+          STAT_CORE_EVENT_N(cur_uop->m_core_id, FENCE_EXEC_CYCLES,
+              m_cur_core_cycle - cur_uop->m_sched_cycle);
+
+          // update the uop version information
+          rob->update_root(cur_uop);
+        }
+
+        rob->pop();
+        POWER_CORE_EVENT(m_core_id, POWER_REORDER_BUF_R);
+        POWER_CORE_EVENT(m_core_id, POWER_INST_COMMIT_SEL_LOGIC_R);
       }
-
-      rob->pop();
-      POWER_CORE_EVENT(m_core_id, POWER_REORDER_BUF_R);
-      POWER_CORE_EVENT(m_core_id, POWER_INST_COMMIT_SEL_LOGIC_R);
     }
 
     // all uops belong to previous instruction have been retired : inst_count++
@@ -589,4 +597,21 @@ void retire_c::print_wb() {
     DEBUG("uop num:%llu done:%llu version:%d core:%d\n", uop->m_uop_num,
           uop->m_done_cycle, version, uop->m_core_id);
   }
+}
+
+void retire_c::process_done_uops(void) {
+#ifdef CXL
+  m_cur_core_cycle = m_simBase->m_core_cycle[m_core_id];
+
+  auto wrapper = m_simBase->m_mxp;
+  while (1) {
+    void* req = wrapper->pull_done_uopreqs();
+    if (!req) {
+      break;
+    } else {
+      uop_c* uop = static_cast<uop_c*>(req);
+      uop->m_done_cycle = m_cur_core_cycle;
+    }
+  }
+#endif
 }

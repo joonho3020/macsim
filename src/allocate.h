@@ -37,6 +37,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef ALLOCATE_H_INCLUDED
 #define ALLOCATE_H_INCLUDED
 
+#include <list>
+
 #include "macsim.h"
 #include "global_defs.h"
 #include "global_types.h"

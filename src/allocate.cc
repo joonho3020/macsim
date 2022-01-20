@@ -196,8 +196,7 @@ void allocate_c::run_a_cycle(void) {
     // -------------------------------------
     // enqueue an entry in allocate queue
     // -------------------------------------
-    if (!req_roi_queue)
-      alloc_q->enqueue(0, m_rob->last_rob());
+    alloc_q->enqueue(0, m_rob->last_rob());
 
     POWER_CORE_EVENT(m_core_id, POWER_INST_QUEUE_W);
     POWER_CORE_EVENT(m_core_id, POWER_INST_COMMIT_SEL_LOGIC_W);
@@ -220,8 +219,7 @@ void allocate_c::run_a_cycle(void) {
                   ? roi_ALLOCQ
                   : simd_ALLOCQ;
     
-    if (!req_roi_queue)
-      m_rob->push(uop);
+    m_rob->push(uop);
 
     POWER_CORE_EVENT(m_core_id, POWER_REORDER_BUF_W);
 

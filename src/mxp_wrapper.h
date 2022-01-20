@@ -54,18 +54,22 @@ public:
 
   void run_a_cycle(bool pll_locked);
 
-  bool insert_request(Addr addr, bool write, void* mem_req);
+  bool insert_request(Addr addr, bool write, bool uop, void* req);
 
-  void mxp_callback(Addr addr, bool write, void* mem_req);
+  void mxp_memreq_callback(Addr addr, bool write, void* mem_req);
 
-  void* pull_done_reqs(void);
+  void mxp_uopreq_callback(Addr addr, bool write, void* uop);
+
+  void* pull_done_memreqs(void);
+  void* pull_done_uopreqs(void);
 
 public:
   Counter m_cycle;
   cxlsim::cxlsim_c* m_cxlsim;
 
 private:
-  std::list<void*> m_done_reqs;
+  std::list<void*> m_done_memreqs;
+  std::list<void*> m_done_uopreqs;
 };
 
 } // namespace cxlsim

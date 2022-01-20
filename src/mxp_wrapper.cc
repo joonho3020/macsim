@@ -71,30 +71,48 @@ void mxp_wrapper_c::init(int argc, char **argv) {
   m_cxlsim = new cxlsim::cxlsim_c();
   m_cxlsim->init(argc, argv);
 
-  cxlsim::callback_t *done_callback
-    = new cxlsim::Callback<mxp_wrapper_c, void, Addr, bool, void*>(&(*this), &mxp_wrapper_c::mxp_callback);
+  cxlsim::callback_t *memreq_done_callback
+    = new cxlsim::Callback<mxp_wrapper_c, void, Addr, bool, void*>(&(*this), &mxp_wrapper_c::mxp_memreq_callback);
 
-  m_cxlsim->register_callback(done_callback);
+  cxlsim::callback_t *uopreq_done_callback
+    = new cxlsim::Callback<mxp_wrapper_c, void, Addr, bool, void*>(&(*this), &mxp_wrapper_c::mxp_uopreq_callback);
+
+  m_cxlsim->register_memreq_callback(memreq_done_callback);
+  m_cxlsim->register_uopreq_callback(uopreq_done_callback);
 }
 
 void mxp_wrapper_c::run_a_cycle(bool pll_locked) {
   m_cxlsim->run_a_cycle(pll_locked);
 }
 
-bool mxp_wrapper_c::insert_request(Addr addr, bool write, void* mem_req) {
-  return m_cxlsim->insert_request(addr, write, (void*)mem_req);
+bool mxp_wrapper_c::insert_request(Addr addr, bool write, bool uop, void* req) {
+  return m_cxlsim->insert_request(addr, write, uop, (void*)req);
 }
 
-void mxp_wrapper_c::mxp_callback(Addr addr, bool write, void* req) {
-  if (req != NULL) m_done_reqs.push_back(req);
+void mxp_wrapper_c::mxp_memreq_callback(Addr addr, bool write, void* req) {
+  if (req != NULL) m_done_memreqs.push_back(req);
 }
 
-void* mxp_wrapper_c::pull_done_reqs() {
-  if (m_done_reqs.empty()) {
+void mxp_wrapper_c::mxp_uopreq_callback(Addr addr, bool write, void* req) {
+  if (req != NULL) m_done_uopreqs.push_back(req);
+}
+
+void* mxp_wrapper_c::pull_done_memreqs() {
+  if (m_done_memreqs.empty()) {
     return NULL;
   } else {
-    void* req = m_done_reqs.front();
-    m_done_reqs.pop_front();
+    void* req = m_done_memreqs.front();
+    m_done_memreqs.pop_front();
+    return req;
+  }
+}
+
+void* mxp_wrapper_c::pull_done_uopreqs() {
+  if (m_done_uopreqs.empty()) {
+    return NULL;
+  } else {
+    void* req = m_done_uopreqs.front();
+    m_done_uopreqs.pop_front();
     return req;
   }
 }
