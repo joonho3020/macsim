@@ -171,7 +171,12 @@ void retire_c::run_a_cycle() {
       cur_uop = rob->front();
 
       if (cur_uop->m_is_roi) {
-        rob->pop();
+        if (!cur_uop->m_done_cycle || !cur_uop->m_exec_cycle ||
+            cur_uop->m_done_cycle > m_cur_core_cycle) {
+          break;
+        } else {
+          rob->pop();
+        }
       } else {
 
         // uncompleted memory store UOPs can be placed in write buffer

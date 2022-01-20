@@ -18,19 +18,14 @@ cp src/ramulator/configs/* ./bin
 `pin -t ./tools/x86_trace_generator/obj-intel64/trace_generator.so -manual 1 -roi 1 -- <binary>`
 
 ## TODO
-- Trace generation
+- Trace generation (Done)
   - Mark ROI for traces
-- Core
+- Core (Done)
   - When the first instruction of ROI is fetched?
     - Dispatch them to CXLSim
-    - For these instructions, don't consider dependency w.r.t instructions preceding ROI
-  - Retire instructions in CXLSim
-  - After ROI passes, fetch & dispatch instructions to ROB
-    - If there are instructions that are dependent on instructions in the ROI, just ignore the dependencies
+    - For these instructions, don't consider dependency w.r.t instructions preceding ROI & succeeding ROI
 - CXLSim
-  - Add dispatch queue
-  - Add NDP & compute units (how to implement ports?)
-  - Add instruction retirement logic
+  - Add NDP & compute units (model latency of each uop)
 
 ## Introduction
 

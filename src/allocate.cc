@@ -124,10 +124,8 @@ void allocate_c::run_a_cycle(void) {
     int req_roi_queue = 0;
     int q_type = *m_simBase->m_knobs->KNOB_GEN_ALLOCQ_INDEX;
 
-    if (uop->m_is_roi) {
+    if (uop->m_is_roi)
       req_roi_queue = 1;
-      req_rob = 0;
-    }
     else if (uop->m_mem_type == MEM_LD)  // load queue
       req_lb = 1;
     else if (uop->m_mem_type == MEM_ST)  // store queue
