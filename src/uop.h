@@ -690,6 +690,8 @@ public:
   uint64_t m_hmc_trans_id;
   bool m_dep_on_hmc_inst;
 
+  bool m_is_roi;
+
 private:
   macsim_c *m_simBase; /**< macsim_c base class for simulation globals */
 };

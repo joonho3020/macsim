@@ -87,6 +87,7 @@ typedef struct trace_info_cpu_s {
   bool m_write_flg; /**< write flag */
   uint8_t m_num_ld; /**< number of load operations */
   uint8_t m_size; /**< instruction size */
+  bool m_is_roi; /**< roi marked instruction */
   // dynamic information
   uint64_t m_ld_vaddr1; /**< load address 1 */
   uint64_t m_ld_vaddr2; /**< load address 2 */
@@ -269,6 +270,8 @@ typedef struct trace_uop_s {
   // changed by Lifeng
   HMC_Type m_hmc_inst; /**<  hmc type of cur uop */
   uint64_t m_hmc_trans_id;
+
+  bool m_is_roi; /**< Check if inst is in ROI */
 } trace_uop_s;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
