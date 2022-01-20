@@ -132,6 +132,11 @@ void map_c::add_src_from_map_entry(uop_c *uop, int src_num,
   ASSERT(map_entry->m_uop);
   ASSERT(type < NUM_DEP_TYPES);
 
+  uop_c* src_uop = map_entry->m_uop;
+  if (uop->m_is_roi != src_uop->m_is_roi) {
+    return;
+  }
+
   // changed by Lifeng
   // mark the uop that is depending on HMC uops
   if (map_entry->m_uop->m_hmc_inst > 0 && uop->m_hmc_inst == 0 &&
@@ -178,8 +183,11 @@ void map_c::add_src_from_uop(uop_c *uop, uop_c *src_uop, Dep_Type type) {
   for (int jj = 0; jj < uop->m_num_srcs; ++jj) {
     src_info_c *info = &uop->m_map_src_info[jj];
     uop_c *uop_src_uop = info->m_uop;
+    if (uop_src_uop == NULL) continue;
     if (uop_src_uop->m_uop_num == src_uop->m_uop_num) return;
   }
+
+  if (uop->m_is_roi != src_uop->m_is_roi) return;
 
   // we want to use this function only for memory dependencies
   ASSERT(type != REG_DATA_DEP);

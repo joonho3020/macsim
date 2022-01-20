@@ -508,6 +508,8 @@ FRONTEND_MODE frontend_c::process_ifetch(unsigned int tid,
         // access branch predictors
         // -------------------------------------
         int br_mispred = false;
+
+        // FIXME : Joonho, Don't do branch prediction for NDP offloading
         if (new_uop->m_cf_type) {
           // btb prediction
           bool btb_miss = btb_access(new_uop);

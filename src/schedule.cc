@@ -131,6 +131,8 @@ bool schedule_c::check_srcs(int entry) {
       continue;
     }
 
+    ASSERT(src_uop->m_is_roi == cur_uop->m_is_roi);
+
     DEBUG_CORE(m_core_id,
                "core_cycle_m_count:%lld m_core_id:%d thread_id:%d uop_num:%lld "
                "src_uop_num:%llu "
