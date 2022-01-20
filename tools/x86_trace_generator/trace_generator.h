@@ -218,7 +218,7 @@ string tr_opcode_names[106] = {
     "PT",
     "PUSH",
     "RDPID",
-/* "RDPRU", */
+    "RDPRU",
     "RDRAND",
     "RDSEED",
     "RDWRFSGS",
