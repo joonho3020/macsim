@@ -157,6 +157,10 @@ protected:
    */
   virtual void advance(int ALLOCQ_index);
 
+  virtual void advance_roi(int ALLOCQ_index);
+
+  virtual void advance_non_roi(int ALLOCQ_index);
+
 protected:
   static const int MAX_SCHED_SIZE = 8192; /**< maximum scheduler table size */
 

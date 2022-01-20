@@ -522,6 +522,7 @@ POSSIBILITY OF SUCH DAMAGE.
   uns miaq_size;                                                               \
   uns fq_size;                                                                 \
   uns siaq_size;                                                               \
+  uns roiaq_size;                                                              \
   string m_knob_schedule = "";                                                 \
   uns m_knob_fetch_latency;                                                    \
   uns m_knob_alloc_latency;                                                    \
@@ -536,6 +537,7 @@ POSSIBILITY OF SUCH DAMAGE.
       miaq_size = *m_simBase->m_knobs->KNOB_MIAQ_SIZE;                         \
       fq_size = *m_simBase->m_knobs->KNOB_FQ_SIZE;                             \
       siaq_size = *m_simBase->m_knobs->KNOB_SIAQ_SIZE;                         \
+      roiaq_size = *m_simBase->m_knobs->KNOB_ROIAQ_SIZE;                       \
       m_max_threads_per_core = *m_simBase->m_knobs->KNOB_MAX_THREADS_PER_CORE; \
       m_core_type = static_cast<string>(*m_simBase->m_knobs->KNOB_CORE_TYPE);  \
       m_knob_schedule =                                                        \
@@ -555,6 +557,7 @@ POSSIBILITY OF SUCH DAMAGE.
       miaq_size = *m_simBase->m_knobs->KNOB_MIAQ_MEDIUM_SIZE;                  \
       fq_size = *m_simBase->m_knobs->KNOB_FQ_MEDIUM_SIZE;                      \
       siaq_size = *m_simBase->m_knobs->KNOB_SIAQ_MEDIUM_SIZE;                  \
+      roiaq_size = *m_simBase->m_knobs->KNOB_ROIAQ_MEDIUM_SIZE;                \
       m_max_threads_per_core =                                                 \
         *m_simBase->m_knobs->KNOB_MAX_THREADS_PER_MEDIUM_CORE;                 \
       m_core_type =                                                            \
@@ -578,6 +581,7 @@ POSSIBILITY OF SUCH DAMAGE.
       miaq_size = *m_simBase->m_knobs->KNOB_MIAQ_LARGE_SIZE;                   \
       fq_size = *m_simBase->m_knobs->KNOB_FQ_LARGE_SIZE;                       \
       siaq_size = *m_simBase->m_knobs->KNOB_SIAQ_LARGE_SIZE;                   \
+      roiaq_size = *m_simBase->m_knobs->KNOB_ROIAQ_LARGE_SIZE;                 \
       m_max_threads_per_core =                                                 \
         *m_simBase->m_knobs->KNOB_MAX_THREADS_PER_LARGE_CORE;                  \
       m_core_type =                                                            \

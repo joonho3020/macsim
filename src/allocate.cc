@@ -121,9 +121,14 @@ void allocate_c::run_a_cycle(void) {
     int req_int_reg = 0;  // require integer register
     int req_fp_reg = 0;  // require fp register
     int req_simd_reg = 0;  // require simd register
+    int req_roi_queue = 0;
     int q_type = *m_simBase->m_knobs->KNOB_GEN_ALLOCQ_INDEX;
 
-    if (uop->m_mem_type == MEM_LD)  // load queue
+    if (uop->m_is_roi) {
+      req_roi_queue = 1;
+      req_rob = 0;
+    }
+    else if (uop->m_mem_type == MEM_LD)  // load queue
       req_lb = 1;
     else if (uop->m_mem_type == MEM_ST)  // store queue
       req_sb = 1;
@@ -148,6 +153,8 @@ void allocate_c::run_a_cycle(void) {
         q_type = *m_simBase->m_knobs->KNOB_SIMD_ALLOCQ_INDEX;
       else if (req_sb || req_lb)
         q_type = *m_simBase->m_knobs->KNOB_MEM_ALLOCQ_INDEX;
+      else if (req_roi_queue)
+        q_type = *m_simBase->m_knobs->KNOB_ROI_ALLOCQ_INDEX;
       else
         q_type = *m_simBase->m_knobs->KNOB_GEN_ALLOCQ_INDEX;
     }
@@ -189,7 +196,8 @@ void allocate_c::run_a_cycle(void) {
     // -------------------------------------
     // enqueue an entry in allocate queue
     // -------------------------------------
-    alloc_q->enqueue(0, m_rob->last_rob());
+    if (!req_roi_queue)
+      alloc_q->enqueue(0, m_rob->last_rob());
 
     POWER_CORE_EVENT(m_core_id, POWER_INST_QUEUE_W);
     POWER_CORE_EVENT(m_core_id, POWER_INST_COMMIT_SEL_LOGIC_W);
@@ -208,8 +216,12 @@ void allocate_c::run_a_cycle(void) {
             ? mem_ALLOCQ
             : (q_type == *m_simBase->m_knobs->KNOB_FLOAT_ALLOCQ_INDEX)
                 ? fp_ALLOCQ
-                : simd_ALLOCQ;
-    m_rob->push(uop);
+                : (q_type == *m_simBase->m_knobs->KNOB_ROI_ALLOCQ_INDEX)
+                  ? roi_ALLOCQ
+                  : simd_ALLOCQ;
+    
+    if (!req_roi_queue)
+      m_rob->push(uop);
 
     POWER_CORE_EVENT(m_core_id, POWER_REORDER_BUF_W);
 

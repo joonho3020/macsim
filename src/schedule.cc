@@ -325,8 +325,14 @@ bool schedule_c::uop_schedule(int entry, SCHED_FAIL_TYPE* sched_fail_reason) {
   return true;
 }
 
-// move uops from alloc queue to schedule queue
-void schedule_c::advance(int q_index) {
+void schedule_c::advance_roi(int q_index) {
+  fill_n(m_count, static_cast<std::size_t>(max_ALLOCQ), 0);
+
+  while (m_alloc_q[q_index]->ready()) {
+  }
+}
+
+void schedule_c::advance_non_roi(int q_index) {
   // Initialize the m_count array with zeros
   fill_n(m_count, static_cast<std::size_t>(max_ALLOCQ), 0);
 
@@ -406,4 +412,12 @@ void schedule_c::advance(int q_index) {
     // update the element m_count for the corresponding sched queue
     m_num_per_sched[q_type] = m_num_per_sched[q_type] + 1;
   }
+}
+
+// move uops from alloc queue to schedule queue
+void schedule_c::advance(int q_index) {
+  if (q_index == roi_ALLOCQ)
+    advance_roi(q_index);
+  else
+    advance_non_roi(q_index);
 }

@@ -498,6 +498,7 @@ FRONTEND_MODE frontend_c::process_ifetch(unsigned int tid,
         // register mapping - dependence checking
         // -------------------------------------
         if (!*m_simBase->m_knobs->KNOB_IGNORE_DEP) {
+          // Joonho, Delete register mappings btw roi & non-roi
           m_map->map_uop(new_uop);
           m_map->map_mem_dep(new_uop);
 
@@ -509,7 +510,7 @@ FRONTEND_MODE frontend_c::process_ifetch(unsigned int tid,
         // -------------------------------------
         int br_mispred = false;
 
-        // FIXME : Joonho, Don't do branch prediction for NDP offloading
+        // Joonho, Don't do branch prediction for NDP offloading
         if (new_uop->m_cf_type && !new_uop->m_is_roi) {
           // btb prediction
           bool btb_miss = btb_access(new_uop);
