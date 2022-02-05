@@ -348,12 +348,29 @@ void schedule_c::advance_roi(int q_index) {
       continue;
     }
 
+    std::vector<std::pair<Counter, int>> src_uop_list;
+    for (int ii = 0; ii < cur_uop->m_num_srcs; ++ii) {
+      uop_c* src_uop = cur_uop->m_map_src_info[ii].m_uop;
+      Counter src_uop_num = cur_uop->m_map_src_info[ii].m_uop_num;
+
+      // check if src uop is valid
+      if ((src_uop == NULL) || !src_uop->m_valid || 
+          (src_uop->m_uop_num != src_uop_num) ||
+          (src_uop->m_thread_id != cur_uop->m_thread_id)) {
+        continue;
+      }
+      src_uop_list.push_back({cur_uop->m_map_src_info[ii].m_uop->m_unique_num,
+                              cur_uop->m_map_src_info[ii].m_type});
+    }
+
     auto wrapper = m_simBase->m_mxp;
-    if (wrapper->insert_request(0, 0, true, (void*)cur_uop)) {
+    bool success = wrapper->insert_uop_request((void*)cur_uop, 
+                                    cur_uop->m_uop_type, cur_uop->m_mem_type, 
+                                    cur_uop->m_vaddr, cur_uop->m_unique_num, 
+                                    src_uop_list);
+    if (success) {
       // dequeue element
       m_alloc_q[q_index]->dequeue();
-
-
       ++m_count[q_type];
 
       cur_uop->m_in_iaq = false;

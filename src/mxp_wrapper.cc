@@ -85,8 +85,15 @@ void mxp_wrapper_c::run_a_cycle(bool pll_locked) {
   m_cxlsim->run_a_cycle(pll_locked);
 }
 
-bool mxp_wrapper_c::insert_request(Addr addr, bool write, bool uop, void* req) {
-  return m_cxlsim->insert_request(addr, write, uop, (void*)req);
+bool mxp_wrapper_c::insert_mem_request(Addr addr, bool write, void* req) {
+  return m_cxlsim->insert_mem_request(addr, write, (void*)req);
+}
+
+bool mxp_wrapper_c::insert_uop_request(void* req, int uop_type, int mem_type,
+                          Addr addr, Counter unique_id, 
+                          std::vector<std::pair<Counter, int>> src_uop_list) {
+  return m_cxlsim->insert_uop_request(req, uop_type, mem_type, addr, 
+                                      unique_id, src_uop_list);
 }
 
 void mxp_wrapper_c::mxp_memreq_callback(Addr addr, bool write, void* req) {

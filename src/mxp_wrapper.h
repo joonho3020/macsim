@@ -54,7 +54,11 @@ public:
 
   void run_a_cycle(bool pll_locked);
 
-  bool insert_request(Addr addr, bool write, bool uop, void* req);
+  bool insert_mem_request(Addr addr, bool write, void* req);
+
+  bool insert_uop_request(void* req, int uop_type, int mem_type,
+                          Addr addr, Counter unique_id, 
+                          std::vector<std::pair<Counter, int>> src_uop_list);
 
   void mxp_memreq_callback(Addr addr, bool write, void* mem_req);
 

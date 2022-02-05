@@ -266,7 +266,8 @@ cxlsim_srcs = [
     'src/CXLSim/src/pcie_endpoint.cc',
     'src/CXLSim/src/pcie_rc.cc',
     'src/CXLSim/src/ramulator_wrapper.cc',
-    'src/CXLSim/src/statistics.cc'
+    'src/CXLSim/src/statistics.cc',
+    'src/CXLSim/src/uop.cc'
 ]
 
 if flags['cxl'] == '1':

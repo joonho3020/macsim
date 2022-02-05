@@ -121,6 +121,11 @@ retire_c::~retire_c() {
 // Check front ROB (reorder buffer) entry and see whehther it is completed
 // If there are multiple completed uops, commit until pipeline width
 void retire_c::run_a_cycle() {
+  if (m_simBase->m_knobs->KNOB_DEBUG_RETIRE_STAGE) {
+/* m_rob->print_version_info(); */
+    m_rob->print();
+  }
+
   // check whether retire stage is running
   if (!m_retire_running) {
     return;
@@ -229,10 +234,10 @@ void retire_c::run_a_cycle() {
           // STAT_CORE_EVENT(cur_uop->m_core_id, DYN_FENCE_NUM);
           // STAT_EVENT(DYN_FENCE_NUM);
 
-          DEBUG_CORE(
-              cur_uop->m_core_id,
-              "thread_id:%d uop_num:%llu inst_num:%llu fence operations \n",
-              cur_uop->m_thread_id, cur_uop->m_uop_num, cur_uop->m_inst_num);
+/* DEBUG_CORE( */
+/* cur_uop->m_core_id, */
+/* "thread_id:%d uop_num:%llu inst_num:%llu fence operations \n", */
+/* cur_uop->m_thread_id, cur_uop->m_uop_num, cur_uop->m_inst_num); */
 
           if (KNOB(KNOB_ACQ_REL)->getValue()) {
             fence_type ft;
@@ -308,8 +313,8 @@ void retire_c::run_a_cycle() {
       core->m_thread_reach_end[cur_uop->m_thread_id] = true;
       if (!core->m_thread_finished[cur_uop->m_thread_id]) {
         ++core->m_num_thread_reach_end;
-        DEBUG_CORE(m_core_id, "core_id:%d thread_id:%d terminated\n", m_core_id,
-                   cur_uop->m_thread_id);
+/* DEBUG_CORE(m_core_id, "core_id:%d thread_id:%d terminated\n", m_core_id, */
+/* cur_uop->m_thread_id); */
 
         // terminate thread
         m_simBase->m_process_manager->terminate_thread(
@@ -351,12 +356,12 @@ void retire_c::run_a_cycle() {
     // update number of retired uops
     ++m_uops_retired[cur_uop->m_thread_id];
 
-    DEBUG_CORE(m_core_id,
-               "core_id:%d thread_id:%d retired_insts:%lld uop->inst_num:%lld "
-               "uop_num:%lld done_cycle:%lld\n",
-               m_core_id, cur_uop->m_thread_id,
-               m_insts_retired[cur_uop->m_thread_id], cur_uop->m_inst_num,
-               cur_uop->m_uop_num, cur_uop->m_done_cycle);
+/* DEBUG_CORE(m_core_id, */
+/* "core_id:%d thread_id:%d retired_insts:%lld uop->inst_num:%lld " */
+/* "uop_num:%lld done_cycle:%lld\n", */
+/* m_core_id, cur_uop->m_thread_id, */
+/* m_insts_retired[cur_uop->m_thread_id], cur_uop->m_inst_num, */
+/* cur_uop->m_uop_num, cur_uop->m_done_cycle); */
 
     // release physical registers
     if (cur_uop->m_req_lb) {

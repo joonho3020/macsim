@@ -287,3 +287,31 @@ void rob_c::print_fence_entries(fence_type ft) {
 void rob_c::set_wb_empty(bool state) {
   m_wb_empty = state;
 }
+
+void rob_c::print() {
+  std::cout << "-------- start ----------------" << std::endl;
+  for (int ii = m_first_entry; ii != m_last_entry; ii = (ii + 1) % m_max_cnt) {
+    uop_c* cur_uop = m_rob[ii];
+    std::cout << "unique num: " << cur_uop->m_unique_num;
+    std::cout << " srcs ready: " << cur_uop->m_srcs_rdy;
+    std::cout << (cur_uop->m_is_roi ? " ROI" : " x ROI");
+    std::cout << " src id: ";
+
+    for (int jj = 0; jj < cur_uop->m_num_srcs; jj++) {
+      uop_c* src_uop = cur_uop->m_map_src_info[jj].m_uop;
+      Counter src_uop_num = cur_uop->m_map_src_info[jj].m_uop_num;
+
+      // check if src uop is valid
+      if ((src_uop == NULL) || !src_uop->m_valid || 
+          (src_uop->m_uop_num != src_uop_num) ||
+          (src_uop->m_thread_id != cur_uop->m_thread_id)) {
+        continue;
+      }
+
+      std::cout << src_uop->m_unique_num << "/" << 
+        cur_uop->m_map_src_info[jj].m_unique_num << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << "-------- end ----------------" << std::endl;
+}
