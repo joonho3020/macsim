@@ -510,73 +510,69 @@ FRONTEND_MODE frontend_c::process_ifetch(unsigned int tid,
         // -------------------------------------
         int br_mispred = false;
 
+        // Joonho, Don't do branch prediction for NDP offloading
+        if (new_uop->m_cf_type && !(new_uop->m_is_roi && *KNOB(KNOB_NDP_ENABLE))) {
+          // btb prediction
+          bool btb_miss = btb_access(new_uop);
 
-        if (new_uop->m_cf_type) {
-          if (*KNOB(KNOB_NDP_ENABLE) && new_uop->m_is_roi) {
-            // Joonho, Don't do branch prediction for NDP offloading
+          new_uop->m_uop_info.m_btb_miss = btb_miss;
+
+          // branch prediction
+          br_mispred = predict_bpu(new_uop);
+          if (new_uop->m_cf_type == CF_CBR) {
+            STAT_CORE_EVENT(m_core_id, BP_ON_PATH_CORRECT + br_mispred +
+                                         (new_uop->m_off_path) * 3);
+          }
+
+          // BTB miss is MISFETCH. In theory, processor should access the bp only if btb hits
+          // However, just to get some stats, we allow bp accesses.
+          // This might be changed in future
+
+          // if (btb_miss & !br_mispred)
+          if (btb_miss)
+            STAT_CORE_EVENT(m_core_id,
+                            BP_ON_PATH_MISFETCH + (new_uop->m_off_path) * 3);
+
+          // set frontend misprediction */
+          if (br_mispred) {
+            /*! should be per core */
+            m_bp_data->m_bp_recovery_cycle[new_uop->m_thread_id] = MAX_CTR;
+            m_bp_data->m_bp_cause_op[new_uop->m_thread_id] = new_uop->m_uop_num;
+
+            DEBUG_CORE(
+              m_core_id,
+              "m_core_id:%d tid:%d branch is mispredicted inst_num:%lld "
+              "uop_num:%lld\n",
+              m_core_id, new_uop->m_thread_id, new_uop->m_inst_num,
+              new_uop->m_uop_num);
+          } else if (btb_miss) {
+            m_bp_data->m_bp_redirect_cycle[new_uop->m_thread_id] = MAX_CTR;
+            m_bp_data->m_bp_cause_op[new_uop->m_thread_id] = new_uop->m_uop_num;
+
+            DEBUG_CORE(m_core_id,
+                       "m_core_id:%d tid:%d branch is misfetched(btb_miss) "
+                       "inst_num:%lld uop_num:%lld\n",
+                       m_core_id, new_uop->m_thread_id, new_uop->m_inst_num,
+                       new_uop->m_uop_num);
           } else {
-            // btb prediction
-            bool btb_miss = btb_access(new_uop);
-
-            new_uop->m_uop_info.m_btb_miss = btb_miss;
-
-            // branch prediction
-            br_mispred = predict_bpu(new_uop);
-            if (new_uop->m_cf_type == CF_CBR) {
-              STAT_CORE_EVENT(m_core_id, BP_ON_PATH_CORRECT + br_mispred +
-                  (new_uop->m_off_path) * 3);
-            }
-
-            // BTB miss is MISFETCH. In theory, processor should access the bp only if btb hits
-            // However, just to get some stats, we allow bp accesses.
-            // This might be changed in future
-
-            // if (btb_miss & !br_mispred)
-            if (btb_miss)
-              STAT_CORE_EVENT(m_core_id,
-                  BP_ON_PATH_MISFETCH + (new_uop->m_off_path) * 3);
-
-            // set frontend misprediction */
-            if (br_mispred) {
-              /*! should be per core */
-              m_bp_data->m_bp_recovery_cycle[new_uop->m_thread_id] = MAX_CTR;
-              m_bp_data->m_bp_cause_op[new_uop->m_thread_id] = new_uop->m_uop_num;
-
-              DEBUG_CORE(
-                  m_core_id,
-                  "m_core_id:%d tid:%d branch is mispredicted inst_num:%lld "
-                  "uop_num:%lld\n",
-                  m_core_id, new_uop->m_thread_id, new_uop->m_inst_num,
-                  new_uop->m_uop_num);
-            } else if (btb_miss) {
-              m_bp_data->m_bp_redirect_cycle[new_uop->m_thread_id] = MAX_CTR;
-              m_bp_data->m_bp_cause_op[new_uop->m_thread_id] = new_uop->m_uop_num;
-
-              DEBUG_CORE(m_core_id,
-                  "m_core_id:%d tid:%d branch is misfetched(btb_miss) "
-                  "inst_num:%lld uop_num:%lld\n",
-                  m_core_id, new_uop->m_thread_id, new_uop->m_inst_num,
-                  new_uop->m_uop_num);
-            } else {
-              fetch_data->m_MT_scheduler.m_next_fetch_addr = new_uop->m_npc;
-              DEBUG_CORE(m_core_id,
-                  "m_core_id:%d tid:%d MT_scheduler[%d]->0x%llx \n",
-                  m_core_id, new_uop->m_thread_id, tid, new_uop->m_npc);
-            }
+            fetch_data->m_MT_scheduler.m_next_fetch_addr = new_uop->m_npc;
+            DEBUG_CORE(m_core_id,
+                       "m_core_id:%d tid:%d MT_scheduler[%d]->0x%llx \n",
+                       m_core_id, new_uop->m_thread_id, tid, new_uop->m_npc);
           }
+        }
 
-          // -------------------------------------
-          // push the uop into the front_end_queue */
-          // -------------------------------------
-          send_uop_to_qfe(new_uop);
-          ++fetched_uops;
+        // -------------------------------------
+        // push the uop into the front_end_queue */
+        // -------------------------------------
+        send_uop_to_qfe(new_uop);
+        ++fetched_uops;
 
-          // -------------------------------------
-          // we fetch enough uops, stop fetching
-          // -------------------------------------
-          if (fetched_uops >= m_knob_width) {
-            break_fetch = BREAK_ISSUE_WIDTH;
-          }
+        // -------------------------------------
+        // we fetch enough uops, stop fetching
+        // -------------------------------------
+        if (fetched_uops >= m_knob_width) {
+          break_fetch = BREAK_ISSUE_WIDTH;
         }
       }  // while ((m_q_frontend->space() > 0) && !break_fetch)
 
