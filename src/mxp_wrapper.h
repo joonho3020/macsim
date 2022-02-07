@@ -57,7 +57,7 @@ public:
   bool insert_mem_request(Addr addr, bool write, void* req);
 
   bool insert_uop_request(void* req, int uop_type, int mem_type,
-                          Addr addr, Counter unique_id, 
+                          Addr addr, Counter unique_id, int latency,
                           std::vector<std::pair<Counter, int>> src_uop_list);
 
   void mxp_memreq_callback(Addr addr, bool write, void* mem_req);

@@ -69,7 +69,7 @@ isched_large_rate 4
 msched_large_rate 2 
 fsched_large_rate 2 
 bp_hist_length 16
-rob_large_size 30                     
+rob_large_size 20                     
 large_core_schedule ooo
 max_threads_per_large_core 1
 icache_large_num_set 64 # 32 KB
@@ -156,7 +156,7 @@ debug_alloc_stage 0
 debug_schedule_stage 0
 debug_exec_stage 0
 debug_dcu_stage 0
-debug_retire_stage 1
+debug_retire_stage 0
 debug_map_stage 0
 debug_mem  0
 debug_trace_read 0

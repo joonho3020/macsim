@@ -363,10 +363,12 @@ void schedule_c::advance_roi(int q_index) {
                               cur_uop->m_map_src_info[ii].m_type});
     }
 
+    int latency = m_exec->get_latency(cur_uop->m_uop_type);
     auto wrapper = m_simBase->m_mxp;
     bool success = wrapper->insert_uop_request((void*)cur_uop, 
                                     cur_uop->m_uop_type, cur_uop->m_mem_type, 
                                     cur_uop->m_vaddr, cur_uop->m_unique_num, 
+                                    latency,
                                     src_uop_list);
     if (success) {
       // dequeue element

@@ -24,7 +24,7 @@ Import('flags')
 
 ## compiler warning flags
 warn_flags = [
-  '-Werror',
+# '-Werror',
 #  '-Wunused-function',
 #  '-Wreturn-type',
 #  '-Wpointer-arith',

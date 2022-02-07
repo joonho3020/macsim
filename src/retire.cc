@@ -121,8 +121,8 @@ retire_c::~retire_c() {
 // Check front ROB (reorder buffer) entry and see whehther it is completed
 // If there are multiple completed uops, commit until pipeline width
 void retire_c::run_a_cycle() {
-  if (m_simBase->m_knobs->KNOB_DEBUG_RETIRE_STAGE) {
-/* m_rob->print_version_info(); */
+  if (*m_simBase->m_knobs->KNOB_DEBUG_RETIRE_STAGE) {
+    m_rob->print_version_info();
     m_rob->print();
   }
 
