@@ -25,7 +25,13 @@ cp src/ramulator/configs/* ./bin
     - Dispatch them to CXLSim
     - For these instructions, don't consider dependency w.r.t instructions preceding ROI & succeeding ROI
 - CXLSim
-  - Add NDP & compute units (model latency of each uop)
+  - Add NDP & compute units (model latency of each uop) (Done)
+  - Adding CXL latency to offload uops hinders the performance significantly
+    - Implement uop offloading so that their offloading latency is neglected?
+    - After all, we are considering accelerators so only a initial signal is all that is required
+- Ramulator : Change ramulator latency for cxl t3 device
+  - Can we assume that instead of burst modes, we can just get 8B of data for every memory access inst?
+    (since we are dealing with workloads with low locality)
 
 ## Introduction
 
