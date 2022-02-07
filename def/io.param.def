@@ -33,3 +33,5 @@ param<CLOCK_IO, clock_io, float, 1.6>
 param<MXP_ENABLE, mxp_enable, bool, false>
 param<MXP_RANGE, mxp_addr_min, uint64_t, 0>
 param<MXP_LATENCY, mxp_latency, long, 300>
+
+param<NDP_ENABLE, ndp_enable, bool, false>

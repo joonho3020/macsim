@@ -142,6 +142,7 @@ noc_dimension 2
 # CXL
 mxp_enable 1
 mxp_addr_min 0
+ndp_enable 1
 
 # ETC
 bug_detector_enable 1
@@ -152,11 +153,11 @@ debug_core_id 0
 debug_cycle_start 1
 debug_cycle_stop 0
 debug_front_stage 0
-debug_alloc_stage 0
-debug_schedule_stage 0
+debug_alloc_stage 1
+debug_schedule_stage 1
 debug_exec_stage 0
 debug_dcu_stage 0
-debug_retire_stage 0
+debug_retire_stage 1
 debug_map_stage 0
 debug_mem  0
 debug_trace_read 0

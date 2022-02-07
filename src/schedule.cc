@@ -482,12 +482,26 @@ void schedule_c::advance_non_roi(int q_index) {
 
     // update the element m_count for the corresponding sched queue
     m_num_per_sched[q_type] = m_num_per_sched[q_type] + 1;
+
+    
+    if (*KNOB(KNOB_DEBUG_SCHEDULE_STAGE)) {
+      std::cout << "advance_non_roi " << "unique_num: " << cur_uop->m_unique_num
+        << " q idx: " << q_index
+        << " roi: " << cur_uop->m_is_roi << " sched cycle: " 
+        << cur_uop->m_sched_cycle << std::endl;
+    }
   }
 }
 
 // move uops from alloc queue to schedule queue
 void schedule_c::advance(int q_index) {
-  if (q_index == roi_ALLOCQ)
+  // if the NDP is disabled, instructions should not flow through the NDP
+  // allocq
+  if (q_index == roi_ALLOCQ && !(*KNOB(KNOB_NDP_ENABLE))) {
+    assert(!m_alloc_q[q_index]->ready());
+  }
+
+  if (q_index == roi_ALLOCQ && *KNOB(KNOB_NDP_ENABLE))
     advance_roi(q_index);
   else
     advance_non_roi(q_index);
