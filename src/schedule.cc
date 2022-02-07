@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************************************/
 
 #include <vector>
+#include <iostream>
 
 #include "schedule.h"
 #include "uop.h"
@@ -136,14 +137,14 @@ bool schedule_c::check_srcs(int entry) {
 
     ASSERT(src_uop->m_is_roi == cur_uop->m_is_roi);
 
-    DEBUG_CORE(m_core_id,
-               "core_cycle_m_count:%lld m_core_id:%d thread_id:%d uop_num:%lld "
-               "src_uop_num:%llu "
-               "src_uop->uop_num:%llu src_uop->done_cycle:%lld "
-               "src_uop->uop_num:%llu  src_uop_num:%llu \n",
-               m_cur_core_cycle, m_core_id, cur_uop->m_thread_id,
-               cur_uop->m_uop_num, src_uop_num, src_uop->m_uop_num,
-               src_uop->m_done_cycle, src_uop->m_uop_num, src_uop_num);
+/* DEBUG_CORE(m_core_id, */
+/* "core_cycle_m_count:%lld m_core_id:%d thread_id:%d uop_num:%lld " */
+/* "src_uop_num:%llu " */
+/* "src_uop->uop_num:%llu src_uop->done_cycle:%lld " */
+/* "src_uop->uop_num:%llu  src_uop_num:%llu \n", */
+/* m_cur_core_cycle, m_core_id, cur_uop->m_thread_id, */
+/* cur_uop->m_uop_num, src_uop_num, src_uop->m_uop_num, */
+/* src_uop->m_done_cycle, src_uop->m_uop_num, src_uop_num); */
 
     // Check if the source uop is ready
     if ((src_uop->m_done_cycle == 0) ||
@@ -154,12 +155,12 @@ bool schedule_c::check_srcs(int entry) {
           (*(cur_uop->m_last_dep_exec) < src_uop->m_done_cycle)) {
         cur_uop->m_last_dep_exec = &(src_uop->m_done_cycle);
       }
-      DEBUG_CORE(m_core_id,
-                 "*cur_uop->last_dep_exec:%lld src_uop->uop_num:%lld "
-                 "src_uop->done_cycle:%lld \n",
-                 cur_uop->m_last_dep_exec ? *(cur_uop->m_last_dep_exec) : 0,
-                 src_uop ? src_uop->m_uop_num : 0,
-                 src_uop ? src_uop->m_done_cycle : 1);
+/* DEBUG_CORE(m_core_id, */
+/* "*cur_uop->last_dep_exec:%lld src_uop->uop_num:%lld " */
+/* "src_uop->done_cycle:%lld \n", */
+/* cur_uop->m_last_dep_exec ? *(cur_uop->m_last_dep_exec) : 0, */
+/* src_uop ? src_uop->m_uop_num : 0, */
+/* src_uop ? src_uop->m_done_cycle : 1); */
 
       ready = false;
       return ready;
@@ -181,22 +182,22 @@ bool schedule_c::uop_schedule(int entry, SCHED_FAIL_TYPE* sched_fail_reason) {
   bool bogus = cur_uop->m_bogus;
   *sched_fail_reason = SCHED_SUCCESS;
 
-  DEBUG_CORE(m_core_id,
-             "cycle_m_count:%llu m_core_id:%d thread_id:%d uop_num:%llu "
-             "inst_num:%llu uop.va:0x%llx "
-             "allocq:%d mem_type:%d last_dep_exec:%llu done_cycle:%llu\n",
-             m_cur_core_cycle, m_core_id, cur_uop->m_thread_id,
-             cur_uop->m_uop_num, cur_uop->m_inst_num, cur_uop->m_vaddr,
-             cur_uop->m_allocq_num, cur_uop->m_mem_type,
-             (cur_uop->m_last_dep_exec ? *(cur_uop->m_last_dep_exec) : 0),
-             cur_uop->m_done_cycle);
+/* DEBUG_CORE(m_core_id, */
+/* "cycle_m_count:%llu m_core_id:%d thread_id:%d uop_num:%llu " */
+/* "inst_num:%llu uop.va:0x%llx " */
+/* "allocq:%d mem_type:%d last_dep_exec:%llu done_cycle:%llu\n", */
+/* m_cur_core_cycle, m_core_id, cur_uop->m_thread_id, */
+/* cur_uop->m_uop_num, cur_uop->m_inst_num, cur_uop->m_vaddr, */
+/* cur_uop->m_allocq_num, cur_uop->m_mem_type, */
+/* (cur_uop->m_last_dep_exec ? *(cur_uop->m_last_dep_exec) : 0), */
+/* cur_uop->m_done_cycle); */
 
   core_c* core = m_simBase->m_core_pointers[m_core_id];
   if (core->get_core_type() == "igpu") {
     // Schedule SIMD instruction every other cycle for Intel GPU
-    DEBUG_CORE(m_core_id,
-               "m_core_id:%d m_last_sched_cycle:%llu m_cur_core_cycle:%llu\n",
-               m_core_id, m_last_sched_cycle, m_cur_core_cycle);
+/* DEBUG_CORE(m_core_id, */
+/* "m_core_id:%d m_last_sched_cycle:%llu m_cur_core_cycle:%llu\n", */
+/* m_core_id, m_last_sched_cycle, m_cur_core_cycle); */
     if ((cur_uop->m_uop_type == UOP_SIMD) &&
         (m_last_sched_cycle == m_cur_core_cycle - 1)) {
       *sched_fail_reason = SCHED_FAIL_NO_AVAILABLE_SIMD_UNIT;
@@ -215,19 +216,19 @@ bool schedule_c::uop_schedule(int entry, SCHED_FAIL_TYPE* sched_fail_reason) {
     // check whether source registers are ready
     if (!check_srcs(entry)) {
       *sched_fail_reason = SCHED_FAIL_OPERANDS_NOT_READY;
-      DEBUG_CORE(
-        m_core_id,
-        "m_core_id:%d thread_id:%d uop_num:%lld operands are not ready \n",
-        m_core_id, cur_uop->m_thread_id, cur_uop->m_uop_num);
+/* DEBUG_CORE( */
+/* m_core_id, */
+/* "m_core_id:%d thread_id:%d uop_num:%lld operands are not ready \n", */
+/* m_core_id, cur_uop->m_thread_id, cur_uop->m_uop_num); */
       return false;
     }
 
     // Check for port availability.
     if (!m_exec->port_available(q_num)) {
       *sched_fail_reason = SCHED_FAIL_NO_AVAILABLE_PORTS;
-      DEBUG_CORE(m_core_id,
-                 "core_id:%d thread_id:%d uop_num:%lld ports are not ready \n",
-                 m_core_id, cur_uop->m_thread_id, cur_uop->m_uop_num);
+/* DEBUG_CORE(m_core_id, */
+/* "core_id:%d thread_id:%d uop_num:%lld ports are not ready \n", */
+/* m_core_id, cur_uop->m_thread_id, cur_uop->m_uop_num); */
       return false;
     }
 
@@ -241,9 +242,9 @@ bool schedule_c::uop_schedule(int entry, SCHED_FAIL_TYPE* sched_fail_reason) {
       if (*KNOB(KNOB_FENCE_PREF_ENABLE)) m_exec->insert_fence_pref(cur_uop);
 
       // prefetch execution hack
-      DEBUG_CORE(m_core_id,
-                 "core_id:%d thread_id:%d uop_num:%lld fence is active \n",
-                 m_core_id, cur_uop->m_thread_id, cur_uop->m_uop_num);
+/* DEBUG_CORE(m_core_id, */
+/* "core_id:%d thread_id:%d uop_num:%lld fence is active \n", */
+/* m_core_id, cur_uop->m_thread_id, cur_uop->m_uop_num); */
       return false;
     }
   }
@@ -259,10 +260,10 @@ bool schedule_c::uop_schedule(int entry, SCHED_FAIL_TYPE* sched_fail_reason) {
   // -------------------------------------
   if (!m_exec->exec(-1, entry, cur_uop)) {
     // uop could not m_execute
-    DEBUG_CORE(
-      m_core_id,
-      "m_core_id:%d thread_id:%d uop_num:%lld just cannot be m_executed\n",
-      m_core_id, cur_uop->m_thread_id, cur_uop->m_uop_num);
+/* DEBUG_CORE( */
+/* m_core_id, */
+/* "m_core_id:%d thread_id:%d uop_num:%lld just cannot be m_executed\n", */
+/* m_core_id, cur_uop->m_thread_id, cur_uop->m_uop_num); */
     return false;
   }
 
@@ -313,17 +314,24 @@ bool schedule_c::uop_schedule(int entry, SCHED_FAIL_TYPE* sched_fail_reason) {
       exit(EXIT_FAILURE);
   }
 
-  DEBUG_CORE(m_core_id,
-             "cycle_m_count:%lld m_core_id:%d thread_id:%d uop_num:%lld "
-             "inst_num:%lld entry:%d allocq:%d "
-             "m_num_in_sched:%d m_num_per_sched[general]:%d "
-             "m_num_per_sched[mem]:%d m_num_per_sched[fp]:%d "
-             "m_num_per_sched[simd]:%d done_cycle:%lld\n",
-             m_cur_core_cycle, m_core_id, cur_uop->m_thread_id,
-             cur_uop->m_uop_num, cur_uop->m_inst_num, entry,
-             cur_uop->m_allocq_num, m_num_in_sched, m_num_per_sched[gen_ALLOCQ],
-             m_num_per_sched[mem_ALLOCQ], m_num_per_sched[fp_ALLOCQ],
-             m_num_per_sched[simd_ALLOCQ], cur_uop->m_done_cycle);
+  if (*KNOB(KNOB_DEBUG_SCHEDULE_STAGE)) {
+    std::cout << "exec " << "unique_num: " << cur_uop->m_unique_num
+      << " q idx: " << q_num
+      << " roi: " << cur_uop->m_is_roi << " sched cycle: " 
+      << cur_uop->m_sched_cycle << std::endl;
+  }
+
+/* DEBUG_CORE(m_core_id, */
+/* "cycle_m_count:%lld m_core_id:%d thread_id:%d uop_num:%lld " */
+/* "inst_num:%lld entry:%d allocq:%d " */
+/* "m_num_in_sched:%d m_num_per_sched[general]:%d " */
+/* "m_num_per_sched[mem]:%d m_num_per_sched[fp]:%d " */
+/* "m_num_per_sched[simd]:%d done_cycle:%lld\n", */
+/* m_cur_core_cycle, m_core_id, cur_uop->m_thread_id, */
+/* cur_uop->m_uop_num, cur_uop->m_inst_num, entry, */
+/* cur_uop->m_allocq_num, m_num_in_sched, m_num_per_sched[gen_ALLOCQ], */
+/* m_num_per_sched[mem_ALLOCQ], m_num_per_sched[fp_ALLOCQ], */
+/* m_num_per_sched[simd_ALLOCQ], cur_uop->m_done_cycle); */
 
   return true;
 }
@@ -381,6 +389,13 @@ void schedule_c::advance_roi(int q_index) {
       cur_uop->m_sched_cycle = m_cur_core_cycle;
       cur_uop->m_exec_cycle = m_cur_core_cycle;
 /* ++m_num_in_sched; */
+
+      if (*KNOB(KNOB_DEBUG_SCHEDULE_STAGE)) {
+        std::cout << "advance roi " << "unique_num: " << cur_uop->m_unique_num
+          << " q idx: " << q_index
+          << " roi: " << cur_uop->m_is_roi << " sched cycle: " 
+          << cur_uop->m_sched_cycle << std::endl;
+      }
     } else { // cannot schedule more uops because of MXP BW
       break;
     }
@@ -420,13 +435,13 @@ void schedule_c::advance_non_roi(int q_index) {
         break;
     }
 
-    DEBUG_CORE(m_core_id,
-               "cycle_m_count:%lld entry:%d m_core_id:%d thread_id:%d "
-               "uop_num:%llu inst_num:%llu "
-               "uop.va:0x%llx allocq:%d mem_type:%d \n",
-               m_cur_core_cycle, entry, m_core_id, cur_uop->m_thread_id,
-               cur_uop->m_uop_num, cur_uop->m_inst_num, cur_uop->m_vaddr,
-               cur_uop->m_allocq_num, cur_uop->m_mem_type);
+/* DEBUG_CORE(m_core_id, */
+/* "cycle_m_count:%lld entry:%d m_core_id:%d thread_id:%d " */
+/* "uop_num:%llu inst_num:%llu " */
+/* "uop.va:0x%llx allocq:%d mem_type:%d \n", */
+/* m_cur_core_cycle, entry, m_core_id, cur_uop->m_thread_id, */
+/* cur_uop->m_uop_num, cur_uop->m_inst_num, cur_uop->m_vaddr, */
+/* cur_uop->m_allocq_num, cur_uop->m_mem_type); */
 
     // Take out the corresponding entries queue type
     // and check if the sched queue of the corresponding type has space.
