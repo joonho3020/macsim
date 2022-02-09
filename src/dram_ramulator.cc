@@ -208,7 +208,7 @@ void dram_ramulator_c::send_mxp_req() {
       break;
     } else {
       mem_req_s* memreq = static_cast<mem_req_s*>(req);
-      assert(memreq->m_type != MRT_WB);
+/* assert(memreq->m_type != MRT_WB); */
 
       mxp_resp_queue.push_back(memreq);
       mxp_requestsInFlight--;
