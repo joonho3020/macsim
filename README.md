@@ -3,35 +3,59 @@
 - Quick start
 ```{bash}
 git clone https://github.com/snu-comparch/macsim.git
-git checkout cxl
+git checkout cxl-dev
 git submodule init
 git submodule update src/ramulator
 cd scripts
 ./knobgen.pl
 ./statgen.pl
 cd ..
-./build.py --ramulator --cxl
 cp src/ramulator/configs/* ./bin
+
+git submodule update src/CXLSim
+cd src/CXLSim
+cd scripts
+./knobgen.pl
+./statgen.pl
+cd ../../../
+cp src/CXLSim/bin/cxl_params.in ./bin
+
+./build.py --ramulator --cxl
 ```
 
 ## Generating traces for NDP
 `pin -t ./tools/x86_trace_generator/obj-intel64/trace_generator.so -manual 1 -roi 1 -- <binary>`
 
-## TODO
-- Trace generation (Done)
-  - Mark ROI for traces
-- Core (Done)
-  - When the first instruction of ROI is fetched?
+## Integrating NDP into CXLSim & Macsim
+- Trace generation
+  - Mark ROI for traces (Done)
+- Core
+  - When the first instruction of ROI is fetched? (Done)
     - Dispatch them to CXLSim
     - For these instructions, don't consider dependency w.r.t instructions preceding ROI & succeeding ROI
+  - Separate allocation queue (Done)
+  - Retire them after NDP uses them (Done)
 - CXLSim
-  - Add NDP & compute units (model latency of each uop) (Done)
   - Adding CXL latency to offload uops hinders the performance significantly
-    - Implement uop offloading so that their offloading latency is neglected?
+    - Implement uop offloading so that their offloading latency is neglected? (Done)
+      - Added knob in CXLSim that can control this (KNOB_UOP_DIRECT_OFFLOAD)
+      - If this knob is turned on, it will obtain/send uops from/to the external simulator w/o adding PCIe latency
+      - Otherwise, offloading uops themselves adds overhead
     - After all, we are considering accelerators so only a initial signal is all that is required
 - Ramulator : Change ramulator latency for cxl t3 device
-  - Can we assume that instead of burst modes, we can just get 8B of data for every memory access inst?
+  - Can we assume that instead of burst modes, we can just get 8B of data for every memory access inst? (Done)
     (since we are dealing with workloads with low locality)
+- Currently IPC increases for NDP when cache sizes are small enough to make the workload BW bound
+
+## TODO
+- CXLSim & NDP
+  - Add ports to model execution unit latency & BW
+  - This NDP model is closer to a general RISC-V core rather than a specific accelerator
+    - Should we constrain this device to be a simple in-order core?
+  - To utilize the DRAM BW more efficiently (for instance, getting 8B of data for every mem access),
+  we need to add compute units 'inside' DIMM
+    - This is effective when the DRAM bw is the bottleneck, not the PCIe bw
+  - Maybe for this NDP, we don't need to touch the internal DRAM structure as we want to get over the PCIe BW bottleneck
 
 ## Introduction
 
