@@ -43,7 +43,6 @@ int main(int argc, char** argv) {
     file << endl;
   }
 
-  // TODO : generate power law graph
   double avg_deg = max((double)(E / V), 1.0);
 
   default_random_engine generator;
@@ -53,7 +52,6 @@ int main(int argc, char** argv) {
   for (int cnt = 0, v = 1; cnt < E && v <= V; v++) {
     // sample degree
     int deg = (int)exp_dist(generator);
-
     deg = max(deg, 1);
 
     // edge overflow
