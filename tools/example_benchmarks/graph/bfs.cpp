@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define MAX_NODES 500000
+#define MAX_NODES 800000
 #define MAX_FEATURE 100
 
 int V, E, F;

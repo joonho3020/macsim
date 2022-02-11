@@ -53,8 +53,9 @@ cp src/CXLSim/bin/cxl_params.in ./bin
   - This NDP model is closer to a general RISC-V core rather than a specific accelerator
     - Should we constrain this device to be a simple in-order core?
   - To utilize the DRAM BW more efficiently (for instance, getting 8B of data for every mem access),
-  we need to add compute units 'inside' DIMM
+    we need to add compute units 'inside' DIMM
     - This is effective when the DRAM bw is the bottleneck, not the PCIe bw
+  - Add caches inside NDP???
   - Maybe for this NDP, we don't need to touch the internal DRAM structure as we want to get over the PCIe BW bottleneck
 
 ## Introduction
