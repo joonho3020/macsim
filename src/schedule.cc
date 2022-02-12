@@ -135,7 +135,7 @@ bool schedule_c::check_srcs(int entry) {
       continue;
     }
 
-    ASSERT(src_uop->m_is_roi == cur_uop->m_is_roi);
+/* ASSERT(src_uop->m_is_roi == cur_uop->m_is_roi); */
 
 /* DEBUG_CORE(m_core_id, */
 /* "core_cycle_m_count:%lld m_core_id:%d thread_id:%d uop_num:%lld " */
@@ -317,8 +317,8 @@ bool schedule_c::uop_schedule(int entry, SCHED_FAIL_TYPE* sched_fail_reason) {
   if (*KNOB(KNOB_DEBUG_SCHEDULE_STAGE)) {
     std::cout << "exec " << "unique_num: " << cur_uop->m_unique_num
       << " q idx: " << q_num
-      << " roi: " << cur_uop->m_is_roi << " sched cycle: " 
-      << cur_uop->m_sched_cycle << std::endl;
+/* << " roi: " << cur_uop->m_is_roi */
+      << " sched cycle: "  << cur_uop->m_sched_cycle << std::endl;
   }
 
 /* DEBUG_CORE(m_core_id, */
@@ -336,7 +336,7 @@ bool schedule_c::uop_schedule(int entry, SCHED_FAIL_TYPE* sched_fail_reason) {
   return true;
 }
 
-void schedule_c::advance_roi(int q_index) {
+void schedule_c::advance_pim(int q_index) {
 #ifdef CXL
   // Initialize the m_count array with zeros
   fill_n(m_count, static_cast<std::size_t>(max_ALLOCQ), 0);
@@ -393,8 +393,8 @@ void schedule_c::advance_roi(int q_index) {
       if (*KNOB(KNOB_DEBUG_SCHEDULE_STAGE)) {
         std::cout << "advance roi " << "unique_num: " << cur_uop->m_unique_num
           << " q idx: " << q_index
-          << " roi: " << cur_uop->m_is_roi << " sched cycle: " 
-          << cur_uop->m_sched_cycle << std::endl;
+/* << " roi: " << cur_uop->m_is_roi */
+          << " sched cycle: " << cur_uop->m_sched_cycle << std::endl;
       }
     } else { // cannot schedule more uops because of MXP BW
       break;
@@ -403,7 +403,7 @@ void schedule_c::advance_roi(int q_index) {
 #endif
 }
 
-void schedule_c::advance_non_roi(int q_index) {
+void schedule_c::advance_non_pim(int q_index) {
   // Initialize the m_count array with zeros
   fill_n(m_count, static_cast<std::size_t>(max_ALLOCQ), 0);
 
@@ -487,8 +487,8 @@ void schedule_c::advance_non_roi(int q_index) {
     if (*KNOB(KNOB_DEBUG_SCHEDULE_STAGE)) {
       std::cout << "advance_non_roi " << "unique_num: " << cur_uop->m_unique_num
         << " q idx: " << q_index
-        << " roi: " << cur_uop->m_is_roi << " sched cycle: " 
-        << cur_uop->m_sched_cycle << std::endl;
+/* << " roi: " << cur_uop->m_is_roi */
+        << " sched cycle: " << cur_uop->m_sched_cycle << std::endl;
     }
   }
 }
@@ -497,12 +497,17 @@ void schedule_c::advance_non_roi(int q_index) {
 void schedule_c::advance(int q_index) {
   // if the NDP is disabled, instructions should not flow through the NDP
   // allocq
-  if (q_index == roi_ALLOCQ && !(*KNOB(KNOB_NDP_ENABLE))) {
-    assert(!m_alloc_q[q_index]->ready());
-  }
+/* if (q_index == roi_ALLOCQ && !(*KNOB(KNOB_NDP_ENABLE))) { */
+/* assert(!m_alloc_q[q_index]->ready()); */
+/* } */
 
-  if (q_index == roi_ALLOCQ && *KNOB(KNOB_NDP_ENABLE))
-    advance_roi(q_index);
-  else
-    advance_non_roi(q_index);
+/* if (q_index == roi_ALLOCQ && *KNOB(KNOB_NDP_ENABLE)) */
+/* advance_roi(q_index); */
+/* else */
+/* advance_non_roi(q_index); */
+
+  if (*KNOB(KNOB_NDP_ENABLE))
+    advance_pim(q_index);
+  else 
+    advance_non_pim(q_index);
 }

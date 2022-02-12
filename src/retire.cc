@@ -175,7 +175,8 @@ void retire_c::run_a_cycle() {
 
       cur_uop = rob->front();
 
-      if (cur_uop->m_is_roi && *KNOB(KNOB_NDP_ENABLE)) {
+/* if (cur_uop->m_is_roi && *KNOB(KNOB_NDP_ENABLE)) { */
+      if (*KNOB(KNOB_NDP_ENABLE)) {
         if (!cur_uop->m_done_cycle || !cur_uop->m_exec_cycle ||
             cur_uop->m_done_cycle > m_cur_core_cycle) {
           break;

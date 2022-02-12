@@ -511,7 +511,8 @@ FRONTEND_MODE frontend_c::process_ifetch(unsigned int tid,
         int br_mispred = false;
 
         // Joonho, Don't do branch prediction for NDP offloading
-        if (new_uop->m_cf_type && !(new_uop->m_is_roi && *KNOB(KNOB_NDP_ENABLE))) {
+/* if (new_uop->m_cf_type && !(new_uop->m_is_roi && *KNOB(KNOB_NDP_ENABLE))) { */
+        if (new_uop->m_cf_type && !(*KNOB(KNOB_NDP_ENABLE))) {
           // btb prediction
           bool btb_miss = btb_access(new_uop);
 

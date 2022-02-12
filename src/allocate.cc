@@ -123,12 +123,12 @@ void allocate_c::run_a_cycle(void) {
     int req_int_reg = 0;  // require integer register
     int req_fp_reg = 0;  // require fp register
     int req_simd_reg = 0;  // require simd register
-    int req_roi_queue = 0;
+/* int req_roi_queue = 0; */
     int q_type = *m_simBase->m_knobs->KNOB_GEN_ALLOCQ_INDEX;
 
-    if (uop->m_is_roi && *KNOB(KNOB_NDP_ENABLE))
-      req_roi_queue = 1;
-    else if (uop->m_mem_type == MEM_LD)  // load queue
+/* if (uop->m_is_roi && *KNOB(KNOB_NDP_ENABLE)) */
+/* req_roi_queue = 1; */
+    if (uop->m_mem_type == MEM_LD)  // load queue
       req_lb = 1;
     else if (uop->m_mem_type == MEM_ST)  // store queue
       req_sb = 1;
@@ -153,26 +153,29 @@ void allocate_c::run_a_cycle(void) {
         q_type = *m_simBase->m_knobs->KNOB_SIMD_ALLOCQ_INDEX;
       else if (req_sb || req_lb)
         q_type = *m_simBase->m_knobs->KNOB_MEM_ALLOCQ_INDEX;
-      else if (req_roi_queue)
-        q_type = *m_simBase->m_knobs->KNOB_ROI_ALLOCQ_INDEX;
+/* else if (req_roi_queue) */
+/* q_type = *m_simBase->m_knobs->KNOB_ROI_ALLOCQ_INDEX; */
       else
         q_type = *m_simBase->m_knobs->KNOB_GEN_ALLOCQ_INDEX;
     }
 
     pqueue_c<int> *alloc_q = m_alloc_q[q_type];
 
-    // check rob and other physical resources
-    if (m_rob->space() < req_rob || m_resource->get_num_sb() < req_sb ||
-        m_resource->get_num_lb() < req_lb || alloc_q->space() < 1 ||
-        m_resource->get_num_int_regs() < req_int_reg ||
-        m_resource->get_num_fp_regs() < req_fp_reg) {
-/* DEBUG_CORE(m_core_id, */
-/* "not enough physical resources: rob_space:%d num_sb:%d " */
-/* "num_lb:%d alloc_q:%d int_reg:%d fp_reg:%d \n", */
-/* m_rob->space(), m_resource->get_num_sb(), */
-/* m_resource->get_num_lb(), alloc_q->space(), */
-/* m_resource->get_num_int_regs(), m_resource->get_num_fp_regs()); */
-      break;
+    if (!(*KNOB(KNOB_NDP_ENABLE))) { // NDP disabled
+
+      // check rob and other physical resources
+      if (m_rob->space() < req_rob || m_resource->get_num_sb() < req_sb ||
+          m_resource->get_num_lb() < req_lb || alloc_q->space() < 1 ||
+          m_resource->get_num_int_regs() < req_int_reg ||
+          m_resource->get_num_fp_regs() < req_fp_reg) {
+        /* DEBUG_CORE(m_core_id, */
+        /* "not enough physical resources: rob_space:%d num_sb:%d " */
+        /* "num_lb:%d alloc_q:%d int_reg:%d fp_reg:%d \n", */
+        /* m_rob->space(), m_resource->get_num_sb(), */
+        /* m_resource->get_num_lb(), alloc_q->space(), */
+        /* m_resource->get_num_int_regs(), m_resource->get_num_fp_regs()); */
+        break;
+      }
     }
 
     // no stall allocate resources
@@ -183,19 +186,21 @@ void allocate_c::run_a_cycle(void) {
         << " alloc cycle: " << uop->m_alloc_cycle << std::endl;
     }
 
-    // allocate physical resources
-    if (req_sb) {
-      m_resource->alloc_sb();
-      uop->m_req_sb = true;
-    } else if (req_lb) {
-      m_resource->alloc_lb();
-      uop->m_req_lb = true;
-    } else if (req_int_reg) {
-      m_resource->alloc_int_reg();
-      uop->m_req_int_reg = true;
-    } else if (req_fp_reg) {
-      m_resource->alloc_fp_reg();
-      uop->m_req_fp_reg = true;
+    if (!(*KNOB(KNOB_NDP_ENABLE))) { // NDP disabled
+      // allocate physical resources
+      if (req_sb) {
+        m_resource->alloc_sb();
+        uop->m_req_sb = true;
+      } else if (req_lb) {
+        m_resource->alloc_lb();
+        uop->m_req_lb = true;
+      } else if (req_int_reg) {
+        m_resource->alloc_int_reg();
+        uop->m_req_int_reg = true;
+      } else if (req_fp_reg) {
+        m_resource->alloc_fp_reg();
+        uop->m_req_fp_reg = true;
+      }
     }
 
     // -------------------------------------
@@ -220,8 +225,8 @@ void allocate_c::run_a_cycle(void) {
             ? mem_ALLOCQ
             : (q_type == *m_simBase->m_knobs->KNOB_FLOAT_ALLOCQ_INDEX)
                 ? fp_ALLOCQ
-                : (q_type == *m_simBase->m_knobs->KNOB_ROI_ALLOCQ_INDEX)
-                  ? roi_ALLOCQ
+/* : (q_type == *m_simBase->m_knobs->KNOB_ROI_ALLOCQ_INDEX) */
+/* ? roi_ALLOCQ */
                   : simd_ALLOCQ;
     
     m_rob->push(uop);

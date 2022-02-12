@@ -294,7 +294,7 @@ void rob_c::print() {
     uop_c* cur_uop = m_rob[ii];
     std::cout << "unique num: " << cur_uop->m_unique_num;
     std::cout << " srcs ready: " << cur_uop->m_srcs_rdy;
-    std::cout << (cur_uop->m_is_roi ? " ROI" : " x ROI");
+/* std::cout << (cur_uop->m_is_roi ? " ROI" : " x ROI"); */
     std::cout << " src id: ";
 
     for (int jj = 0; jj < cur_uop->m_num_srcs; jj++) {
