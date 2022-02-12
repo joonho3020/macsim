@@ -1317,7 +1317,7 @@ void cpu_decoder_c::init_pin_convert(void) {
       m_int_uop_table[XED_CATEGORY_PT] = UOP_IADD;  // new
       m_int_uop_table[XED_CATEGORY_PUSH] = UOP_IADD;
       m_int_uop_table[XED_CATEGORY_RDPID] = UOP_IADD;  // new
-      m_int_uop_table[XED_CATEGORY_RDPRU] = UOP_IADD;  // new
+/* m_int_uop_table[XED_CATEGORY_RDPRU] = UOP_IADD;  // new */
       m_int_uop_table[XED_CATEGORY_RDRAND] = UOP_IADD;
       m_int_uop_table[XED_CATEGORY_RDSEED] = UOP_IADD;
       m_int_uop_table[XED_CATEGORY_RDWRFSGS] = UOP_IADD;
@@ -1423,7 +1423,7 @@ void cpu_decoder_c::init_pin_convert(void) {
       m_fp_uop_table[XED_CATEGORY_PT] = UOP_FADD;  // new
       m_fp_uop_table[XED_CATEGORY_PUSH] = UOP_FADD;
       m_fp_uop_table[XED_CATEGORY_RDPID] = UOP_FADD;  // new
-      m_fp_uop_table[XED_CATEGORY_RDPRU] = UOP_FADD;  // new
+/* m_fp_uop_table[XED_CATEGORY_RDPRU] = UOP_FADD;  // new */
       m_fp_uop_table[XED_CATEGORY_RDRAND] = UOP_FADD;
       m_fp_uop_table[XED_CATEGORY_RDSEED] = UOP_FADD;
       m_fp_uop_table[XED_CATEGORY_RDWRFSGS] = UOP_FADD;
@@ -1530,7 +1530,7 @@ void cpu_decoder_c::init_pin_convert(void) {
       m_int_uop_table[XED_CATEGORY_PT] = UOP_IADD;  // new
       m_int_uop_table[XED_CATEGORY_PUSH] = UOP_IADD;
       m_int_uop_table[XED_CATEGORY_RDPID] = UOP_IADD;  // new
-      m_int_uop_table[XED_CATEGORY_RDPRU] = UOP_IADD;  // new
+/* m_int_uop_table[XED_CATEGORY_RDPRU] = UOP_IADD;  // new */
       m_int_uop_table[XED_CATEGORY_RDRAND] = UOP_IADD;
       m_int_uop_table[XED_CATEGORY_RDSEED] = UOP_IADD;
       m_int_uop_table[XED_CATEGORY_RDWRFSGS] = UOP_IADD;
@@ -1636,7 +1636,7 @@ void cpu_decoder_c::init_pin_convert(void) {
       m_fp_uop_table[XED_CATEGORY_PT] = UOP_FADD;  // new
       m_fp_uop_table[XED_CATEGORY_PUSH] = UOP_FADD;
       m_fp_uop_table[XED_CATEGORY_RDPID] = UOP_FADD;  // new
-      m_fp_uop_table[XED_CATEGORY_RDPRU] = UOP_FADD;  // new
+/* m_fp_uop_table[XED_CATEGORY_RDPRU] = UOP_FADD;  // new */
       m_fp_uop_table[XED_CATEGORY_RDRAND] = UOP_FADD;
       m_fp_uop_table[XED_CATEGORY_RDSEED] = UOP_FADD;
       m_fp_uop_table[XED_CATEGORY_RDWRFSGS] = UOP_FADD;
@@ -1744,7 +1744,7 @@ void cpu_decoder_c::init_pin_convert(void) {
       m_int_uop_table[XED_CATEGORY_PT] = UOP_IADD;  // new
       m_int_uop_table[XED_CATEGORY_PUSH] = UOP_IADD;
       m_int_uop_table[XED_CATEGORY_RDPID] = UOP_IADD;  // new
-      m_int_uop_table[XED_CATEGORY_RDPRU] = UOP_IADD;  // new
+/* m_int_uop_table[XED_CATEGORY_RDPRU] = UOP_IADD;  // new */
       m_int_uop_table[XED_CATEGORY_RDRAND] = UOP_IADD;
       m_int_uop_table[XED_CATEGORY_RDSEED] = UOP_IADD;
       m_int_uop_table[XED_CATEGORY_RDWRFSGS] = UOP_IADD;
@@ -1850,7 +1850,7 @@ void cpu_decoder_c::init_pin_convert(void) {
       m_fp_uop_table[XED_CATEGORY_PT] = UOP_FADD;  // new
       m_fp_uop_table[XED_CATEGORY_PUSH] = UOP_FADD;
       m_fp_uop_table[XED_CATEGORY_RDPID] = UOP_FADD;  // new
-      m_fp_uop_table[XED_CATEGORY_RDPRU] = UOP_FADD;  // new
+/* m_fp_uop_table[XED_CATEGORY_RDPRU] = UOP_FADD;  // new */
       m_fp_uop_table[XED_CATEGORY_RDRAND] = UOP_FADD;
       m_fp_uop_table[XED_CATEGORY_RDSEED] = UOP_FADD;
       m_fp_uop_table[XED_CATEGORY_RDWRFSGS] = UOP_FADD;
@@ -2122,7 +2122,7 @@ const char *cpu_decoder_c::g_tr_opcode_names[MAX_TR_OPCODE_NAME] = {
   "PT",
   "PUSH",
   "RDPID",
-  "RDPRU",
+/* "RDPRU", */
   "RDRAND",
   "RDSEED",
   "RDWRFSGS",
