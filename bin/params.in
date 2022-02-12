@@ -1,9 +1,9 @@
 
 # Simulation Configuration
-num_sim_cores 1
+num_sim_cores 4
 num_sim_small_cores 0
 num_sim_medium_cores 0
-num_sim_large_cores 1
+num_sim_large_cores 4
 core_type ptx
 large_core_type x86
 sim_cycle_count 0 
@@ -69,19 +69,19 @@ isched_large_rate 4
 msched_large_rate 2 
 fsched_large_rate 2 
 bp_hist_length 16
-rob_large_size 512
+rob_large_size 1024
 large_core_schedule ooo
 max_threads_per_large_core 1
 icache_large_num_set 64 # 32 KB
 icache_large_assoc 8
-# l1_large_num_set 64 # 48 KB L1 Cache
-# l1_large_assoc 12
-# l1_large_latency 3
-# l1_large_bypass 0
-# l2_large_num_set 2048 # 2 M L2 Cache
-# l2_large_assoc 16
-# l2_large_latency 8
-# l2_large_bypass 0
+l1_large_num_set 64 # 48 KB L1 Cache
+l1_large_assoc 12
+l1_large_latency 3
+l1_large_bypass 0
+l2_large_num_set 2048 # 2 M L2 Cache
+l2_large_assoc 16
+l2_large_latency 8
+l2_large_bypass 0
 
 # l1_large_num_set 64 # 32 KB L1 Cache
 # l1_large_assoc 8
@@ -92,14 +92,14 @@ icache_large_assoc 8
 # l2_large_latency 8
 # l2_large_bypass 0
 
-l1_large_num_set 4 
-l1_large_assoc 2
-l1_large_latency 3
-l1_large_bypass 0
-l2_large_num_set 128 # 128 KB L2 Cache
-l2_large_assoc 16
-l2_large_latency 8
-l2_large_bypass 0
+# l1_large_num_set 4
+# l1_large_assoc 2
+# l1_large_latency 3
+# l1_large_bypass 0
+# l2_large_num_set 128 # 128 KB L2 Cache
+# l2_large_assoc 16
+# l2_large_latency 8
+# l2_large_bypass 0
 
 
 # Memory
@@ -151,7 +151,7 @@ noc_dimension 2
 # CXL
 mxp_enable 1
 mxp_addr_min 0
-ndp_enable 1
+ndp_enable 0
 
 # ETC
 bug_detector_enable 1

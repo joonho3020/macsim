@@ -177,7 +177,7 @@ void allocate_c::run_a_cycle(void) {
         break;
       }
     } else { // NDP enabled
-      if (m_rob->space() < req_rob) {
+      if (m_rob->space() < req_rob || alloc_q->space() < 1) {
         break;
       }
     }
