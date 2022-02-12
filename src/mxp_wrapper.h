@@ -56,7 +56,7 @@ public:
 
   bool insert_mem_request(Addr addr, bool write, void* req);
 
-  bool insert_uop_request(void* req, int uop_type, int mem_type,
+  bool insert_uop_request(void* req, int core_id, int uop_type, int mem_type,
                           Addr addr, Counter unique_id, int latency,
                           std::vector<std::pair<Counter, int>> src_uop_list);
 
@@ -66,6 +66,8 @@ public:
 
   void* pull_done_memreqs(void);
   void* pull_done_uopreqs(void);
+
+  void print(void);
 
 public:
   Counter m_cycle;

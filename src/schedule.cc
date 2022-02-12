@@ -373,7 +373,7 @@ void schedule_c::advance_pim(int q_index) {
 
     int latency = m_exec->get_latency(cur_uop->m_uop_type);
     auto wrapper = m_simBase->m_mxp;
-    bool success = wrapper->insert_uop_request((void*)cur_uop, 
+    bool success = wrapper->insert_uop_request((void*)cur_uop, m_core_id,
                                     cur_uop->m_uop_type, cur_uop->m_mem_type, 
                                     cur_uop->m_vaddr, cur_uop->m_unique_num, 
                                     latency,

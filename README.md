@@ -46,8 +46,6 @@ cp src/CXLSim/bin/cxl_params.in ./bin
   - Can we assume that instead of burst modes, we can just get 8B of data for every memory access inst? (Done)
     (since we are dealing with workloads with low locality)
 - Currently IPC increases for NDP when cache sizes are small enough to make the workload BW bound
-
-## TODO
 - CXLSim & NDP
   - Add ports to model execution unit latency & BW
   - This NDP model is closer to a general RISC-V core rather than a specific accelerator
@@ -57,6 +55,9 @@ cp src/CXLSim/bin/cxl_params.in ./bin
     - This is effective when the DRAM bw is the bottleneck, not the PCIe bw
   - Add caches inside NDP???
   - Maybe for this NDP, we don't need to touch the internal DRAM structure as we want to get over the PCIe BW bottleneck
+
+## TODO
+- multicore support for NDP...?
 
 ## Introduction
 

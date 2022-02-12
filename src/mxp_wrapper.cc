@@ -89,10 +89,10 @@ bool mxp_wrapper_c::insert_mem_request(Addr addr, bool write, void* req) {
   return m_cxlsim->insert_mem_request(addr, write, (void*)req);
 }
 
-bool mxp_wrapper_c::insert_uop_request(void* req, int uop_type, int mem_type,
-                          Addr addr, Counter unique_id, int latency,
-                          std::vector<std::pair<Counter, int>> src_uop_list) {
-  return m_cxlsim->insert_uop_request(req, uop_type, mem_type, addr, 
+bool mxp_wrapper_c::insert_uop_request(void* req, int core_id, int uop_type, 
+                    int mem_type, Addr addr, Counter unique_id, int latency, 
+                    std::vector<std::pair<Counter, int>> src_uop_list) {
+  return m_cxlsim->insert_uop_request(req, core_id, uop_type, mem_type, addr, 
                                       unique_id, latency, src_uop_list);
 }
 
@@ -122,6 +122,10 @@ void* mxp_wrapper_c::pull_done_uopreqs() {
     m_done_uopreqs.pop_front();
     return req;
   }
+}
+
+void mxp_wrapper_c::print() {
+  m_cxlsim->m_mxp->print_cxlt3_uops();
 }
 
 } // namespace cxlsim

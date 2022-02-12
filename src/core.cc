@@ -89,6 +89,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "network.h"
 #include "dram.h"
 #include "resource.h"
+#include "mxp_wrapper.h"
 
 #include "config.h"
 
@@ -595,6 +596,8 @@ void core_c::check_forward_progress() {
     }
 
     m_simBase->m_network->print();
+
+    m_simBase->m_mxp->print();
 
     ASSERTM(m_core_cycle_count - m_last_forward_progress <=
               *KNOB(KNOB_FORWARD_PROGRESS_LIMIT),
