@@ -176,6 +176,10 @@ void allocate_c::run_a_cycle(void) {
         /* m_resource->get_num_int_regs(), m_resource->get_num_fp_regs()); */
         break;
       }
+    } else { // NDP enabled
+      if (m_rob->space() < req_rob) {
+        break;
+      }
     }
 
     // no stall allocate resources

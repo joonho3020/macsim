@@ -364,17 +364,19 @@ void retire_c::run_a_cycle() {
 /* cur_uop->m_uop_num, cur_uop->m_done_cycle); */
 
     // release physical registers
-    if (cur_uop->m_req_lb) {
-      m_resource->dealloc_lb();
-    }
-    if (cur_uop->m_req_sb) {
-      m_resource->dealloc_sb();
-    }
-    if (cur_uop->m_req_int_reg) {
-      m_resource->dealloc_int_reg();
-    }
-    if (cur_uop->m_req_fp_reg) {
-      m_resource->dealloc_fp_reg();
+    if (!(*KNOB(KNOB_NDP_ENABLE))) {
+      if (cur_uop->m_req_lb) {
+        m_resource->dealloc_lb();
+      }
+      if (cur_uop->m_req_sb) {
+        m_resource->dealloc_sb();
+      }
+      if (cur_uop->m_req_int_reg) {
+        m_resource->dealloc_int_reg();
+      }
+      if (cur_uop->m_req_fp_reg) {
+        m_resource->dealloc_fp_reg();
+      }
     }
 
     if (KNOB(KNOB_USE_WB)->getValue()) {
