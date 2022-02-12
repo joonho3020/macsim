@@ -74,14 +74,14 @@ large_core_schedule ooo
 max_threads_per_large_core 1
 icache_large_num_set 64 # 32 KB
 icache_large_assoc 8
-l1_large_num_set 64 # 48 KB L1 Cache
-l1_large_assoc 12
-l1_large_latency 3
-l1_large_bypass 0
-l2_large_num_set 2048 # 2 M L2 Cache
-l2_large_assoc 16
-l2_large_latency 8
-l2_large_bypass 0
+# l1_large_num_set 64 # 48 KB L1 Cache
+# l1_large_assoc 12
+# l1_large_latency 3
+# l1_large_bypass 0
+# l2_large_num_set 2048 # 2 M L2 Cache
+# l2_large_assoc 16
+# l2_large_latency 8
+# l2_large_bypass 0
 
 # l1_large_num_set 64 # 32 KB L1 Cache
 # l1_large_assoc 8
@@ -91,6 +91,15 @@ l2_large_bypass 0
 # l2_large_assoc 16
 # l2_large_latency 8
 # l2_large_bypass 0
+
+l1_large_num_set 4 
+l1_large_assoc 2
+l1_large_latency 3
+l1_large_bypass 0
+l2_large_num_set 128 # 128 KB L2 Cache
+l2_large_assoc 16
+l2_large_latency 8
+l2_large_bypass 0
 
 
 # Memory
@@ -142,7 +151,7 @@ noc_dimension 2
 # CXL
 mxp_enable 1
 mxp_addr_min 0
-ndp_enable 0
+ndp_enable 1
 
 # ETC
 bug_detector_enable 1
