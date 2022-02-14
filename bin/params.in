@@ -151,7 +151,7 @@ noc_dimension 2
 # CXL
 mxp_enable 1
 mxp_addr_min 0
-ndp_enable 0
+ndp_enable 1
 
 # ETC
 bug_detector_enable 1

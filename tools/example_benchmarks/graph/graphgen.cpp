@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     file << endl;
   }
 
-  double avg_deg = max((double)(E / V), 1.0);
+  const double avg_deg = max((double)(E / V), 1.0);
 
   default_random_engine generator;
   exponential_distribution<double> exp_dist(avg_deg);
@@ -51,8 +51,9 @@ int main(int argc, char** argv) {
 
   for (int cnt = 0, v = 1; cnt < E && v <= V; v++) {
     // sample degree
-    int deg = (int)exp_dist(generator);
-    deg = max(deg, 1);
+/* int deg = (int)exp_dist(generator); */
+/* deg = max(deg, 1); */
+    int deg = avg_deg;
 
     // edge overflow
     if (cnt + deg > E || (cnt < E && v == V)) deg = E - cnt;
