@@ -264,6 +264,7 @@ cxlsim_srcs = [
     'src/CXLSim/src/knob.cc',
     'src/CXLSim/src/packet_info.cc',
     'src/CXLSim/src/pcie_endpoint.cc',
+    'src/CXLSim/src/pcie_vcbuff.cc',
     'src/CXLSim/src/pcie_rc.cc',
     'src/CXLSim/src/ramulator_wrapper.cc',
     'src/CXLSim/src/statistics.cc',
