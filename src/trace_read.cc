@@ -578,7 +578,7 @@ const char *trace_read_c::g_tr_opcode_names[MAX_TR_OPCODE_NAME] = {
   "PT",
   "PUSH",
   "RDPID",
-  "RDPRU",
+/* "RDPRU", */
   "RDRAND",
   "RDSEED",
   "RDWRFSGS",
