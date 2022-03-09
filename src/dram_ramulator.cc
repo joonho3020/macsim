@@ -69,6 +69,8 @@ dram_ramulator_c::dram_ramulator_c(macsim_c *simBase)
   wrapper = new ramulator::RamulatorWrapper(
     configs, *KNOB(KNOB_RAMULATOR_CACHELINE_SIZE),
     *KNOB(KNOB_RAMUDIMM_STATOUT));
+
+  m_in_flight_mxp = 0;
 }
 
 dram_ramulator_c::~dram_ramulator_c() {

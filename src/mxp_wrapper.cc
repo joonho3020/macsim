@@ -61,6 +61,7 @@ namespace cxlsim {
 
 mxp_wrapper_c::mxp_wrapper_c() {
   cxlsim_c* m_cxlsim = NULL;
+  m_in_flight_reqs = 0;
 }
 
 mxp_wrapper_c::~mxp_wrapper_c() {
@@ -79,13 +80,25 @@ void mxp_wrapper_c::init(int argc, char **argv) {
 
 void mxp_wrapper_c::run_a_cycle(bool pll_locked) {
   m_cxlsim->run_a_cycle(pll_locked);
+
+#ifdef CXL_DEBUG
+/* std::cout << m_cxlsim->get_in_flight_reqs() << "/" << m_in_flight_reqs */
+/* << std::endl; */
+  if (m_cxlsim->get_in_flight_reqs() != m_in_flight_reqs) {
+    m_cxlsim->print();
+    assert(0);
+  }
+#endif
 }
 
 bool mxp_wrapper_c::insert_request(Addr addr, bool write, void* mem_req) {
+  m_in_flight_reqs++;
   return m_cxlsim->insert_request(addr, write, (void*)mem_req);
 }
 
 void mxp_wrapper_c::mxp_callback(Addr addr, bool write, void* req) {
+  m_in_flight_reqs--;
+
   if (req != NULL) m_done_reqs.push_back(req);
 }
 
@@ -97,6 +110,10 @@ void* mxp_wrapper_c::pull_done_reqs() {
     m_done_reqs.pop_front();
     return req;
   }
+}
+
+Counter mxp_wrapper_c::get_in_flight_reqs() {
+  return m_cxlsim->get_in_flight_reqs();
 }
 
 } // namespace cxlsim

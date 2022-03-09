@@ -60,9 +60,13 @@ public:
 
   void* pull_done_reqs(void);
 
+  Counter get_in_flight_reqs();
+
 public:
   Counter m_cycle;
   cxlsim::cxlsim_c* m_cxlsim;
+
+  Counter m_in_flight_reqs;
 
 private:
   std::list<void*> m_done_reqs;

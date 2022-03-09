@@ -52,6 +52,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 class dram_ramulator_c : public dram_c
 {
+public:
+  Counter m_in_flight_mxp;
+
 private:
   unsigned int ramu_requestsInFlight;
   std::map<long, std::deque<mem_req_s *>> ramu_reads;
