@@ -73,7 +73,7 @@ void mxp_wrapper_c::init(int argc, char **argv) {
   m_cxlsim->init(argc, argv);
 
   cxlsim::callback_t *done_callback
-    = new cxlsim::Callback<mxp_wrapper_c, void, Addr, bool, void*>(&(*this), &mxp_wrapper_c::mxp_callback);
+    = new cxlsim::Callback<mxp_wrapper_c, void, Addr, bool, Counter, void*>(&(*this), &mxp_wrapper_c::mxp_callback);
 
   m_cxlsim->register_callback(done_callback);
 }
@@ -82,8 +82,6 @@ void mxp_wrapper_c::run_a_cycle(bool pll_locked) {
   m_cxlsim->run_a_cycle(pll_locked);
 
 #ifdef CXL_DEBUG
-/* std::cout << m_cxlsim->get_in_flight_reqs() << "/" << m_in_flight_reqs */
-/* << std::endl; */
   if (m_cxlsim->get_in_flight_reqs() != m_in_flight_reqs) {
     m_cxlsim->print();
     assert(0);
@@ -91,13 +89,18 @@ void mxp_wrapper_c::run_a_cycle(bool pll_locked) {
 #endif
 }
 
-bool mxp_wrapper_c::insert_request(Addr addr, bool write, void* mem_req) {
-  m_in_flight_reqs++;
-  return m_cxlsim->insert_request(addr, write, (void*)mem_req);
+Counter mxp_wrapper_c::insert_request(Addr addr, bool write, void* mem_req) {
+  Counter req_id = m_cxlsim->insert_request(addr, write, (void*)mem_req);
+  if (req_id) {
+    m_in_flight_reqs++;
+    m_in_flight_req_ids[addr][req_id]++;
+  }
+  return req_id;
 }
 
-void mxp_wrapper_c::mxp_callback(Addr addr, bool write, void* req) {
+void mxp_wrapper_c::mxp_callback(Addr addr, bool write, Counter req_id, void* req) {
   m_in_flight_reqs--;
+  m_in_flight_req_ids[addr].erase(req_id);
 
   if (req != NULL) m_done_reqs.push_back(req);
 }
@@ -114,6 +117,25 @@ void* mxp_wrapper_c::pull_done_reqs() {
 
 Counter mxp_wrapper_c::get_in_flight_reqs() {
   return m_cxlsim->get_in_flight_reqs();
+}
+
+void mxp_wrapper_c::print() {
+  for (auto addrmap : m_in_flight_req_ids) {
+    auto reqid_map = addrmap.second;
+    if (reqid_map.size() == 0) continue;
+
+    std::cout << "Addr: " << addrmap.first << ": ";
+
+    for (auto reqid : reqid_map) {
+      auto id = reqid.first;
+      auto cnt = reqid.second;
+
+      if (reqid.second > 0) {
+        std::cout << id << " ";
+      }
+    }
+    std::cout << std::endl;
+  }
 }
 
 } // namespace cxlsim

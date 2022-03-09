@@ -306,7 +306,11 @@ void dram_ramulator_c::receive_mxp_req(mem_req_s* req) {
 #ifdef CXL
   auto wrapper = m_simBase->m_mxp;
 
-  if (wrapper->insert_request(req->m_addr, (req->m_type == MRT_WB), (void*)req)) {
+  Counter cxl_req_id = wrapper->insert_request(req->m_addr, 
+                                              (req->m_type == MRT_WB), 
+                                              (void*)req);
+
+  if (cxl_req_id) {
     req->m_mxpreq = true;
     req->m_state = MXP_REQ_START;
     req->m_insert_cycle = m_simBase->m_core_cycle[req->m_core_id];

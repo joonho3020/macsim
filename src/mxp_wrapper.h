@@ -54,19 +54,23 @@ public:
 
   void run_a_cycle(bool pll_locked);
 
-  bool insert_request(Addr addr, bool write, void* mem_req);
+  Counter insert_request(Addr addr, bool write, void* mem_req);
 
-  void mxp_callback(Addr addr, bool write, void* mem_req);
+  void mxp_callback(Addr addr, bool write, Counter req_id, void* mem_req);
 
   void* pull_done_reqs(void);
 
   Counter get_in_flight_reqs();
+
+  void print();
 
 public:
   Counter m_cycle;
   cxlsim::cxlsim_c* m_cxlsim;
 
   Counter m_in_flight_reqs;
+
+  std::map<Counter, std::map<Counter, int>> m_in_flight_req_ids;
 
 private:
   std::list<void*> m_done_reqs;

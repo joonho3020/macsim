@@ -597,6 +597,7 @@ void core_c::check_forward_progress() {
     m_simBase->m_network->print();
 
 #ifdef CXL
+    m_simBase->m_mxp->print();
     m_simBase->m_mxp->m_cxlsim->print();
 #endif
 
