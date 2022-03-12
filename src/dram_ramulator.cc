@@ -263,7 +263,7 @@ void dram_ramulator_c::receive_ramu_req(mem_req_s* req) {
   auto& cb_func = (is_write) ? write_cb_func : read_cb_func;
   long addr = static_cast<long>(req->m_addr);
 
-  ramulator::Request ramu_req(addr, req_type, cb_func, req->m_core_id);
+  ramulator::Request ramu_req(addr, req_type, cb_func, 0, req->m_core_id);
   bool accepted = wrapper->send(ramu_req);
 
   if (accepted) {
