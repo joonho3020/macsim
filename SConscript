@@ -273,10 +273,9 @@ cxlsim_srcs = [
 if flags['cxl'] == '1':
   env['CPPDEFINES'] += ['CXL']
   env['CPPDEFINES'] += ['RAMULATOR']
-  env['CPPDEFINES'] += ['CXL_DEBUG']
   env['CPPPATH'] += ['#src/CXLSim']
   env['LIBPATH'] += [Dir('.')]
-  env.Library('cxl', cxlsim_srcs, CPPDEFINES=['CXL', 'RAMULATOR', 'CXL_DEBUG'])
+  env.Library('cxl', cxlsim_srcs, CPPDEFINES=['CXL', 'RAMULATOR'])
 
 #########################################################################################
 # MACSIM
