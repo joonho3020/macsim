@@ -81,13 +81,6 @@ void mxp_wrapper_c::init(int argc, char **argv) {
 void mxp_wrapper_c::run_a_cycle(bool pll_locked) {
   m_cxlsim->run_a_cycle(pll_locked);
   m_cycle++;
-
-#ifdef CXL_DEBUG
-  if (m_cxlsim->get_in_flight_reqs() != m_in_flight_reqs) {
-    m_cxlsim->print();
-    assert(0);
-  }
-#endif
 }
 
 Counter mxp_wrapper_c::insert_request(Addr addr, bool write, void* mem_req) {
@@ -95,10 +88,6 @@ Counter mxp_wrapper_c::insert_request(Addr addr, bool write, void* mem_req) {
   if (req_id) {
     m_in_flight_reqs++;
     m_in_flight_req_ids[addr][req_id]++;
-
-#ifdef CXL_DEBUG
-/* std::cout << addr << " " << (write ? 1 : 0) << " " << m_cycle << std::endl; */
-#endif
   }
   return req_id;
 }
@@ -118,10 +107,6 @@ void* mxp_wrapper_c::pull_done_reqs() {
     m_done_reqs.pop_front();
     return req;
   }
-}
-
-Counter mxp_wrapper_c::get_in_flight_reqs() {
-  return m_cxlsim->get_in_flight_reqs();
 }
 
 void mxp_wrapper_c::print() {
